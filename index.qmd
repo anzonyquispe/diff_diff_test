@@ -1,0 +1,68 @@
+---
+title: "Introduction"
+---
+
+# Overview
+
+This book provides a comprehensive comparison of difference-in-differences (DiD) estimators designed for **staggered treatment adoption** with **heterogeneous treatment effects**. We benchmark multiple R and Python packages using synthetic data following the simulation design from @callaway2021difference.
+
+## Background
+
+Traditional two-way fixed effects (TWFE) estimators can produce biased estimates when:
+
+1. Treatment is adopted at different times across units (staggered rollout)
+2. Treatment effects vary over time or across cohorts (heterogeneous effects)
+
+Several new estimators have been developed to address these issues, including methods by:
+
+- **Callaway & Sant'Anna (2021)**: Group-time average treatment effects
+- **de Chaisemartin & D'Haultfoeuille (2020, 2024)**: Robust DiD with multiple periods
+- **Sun & Abraham (2021)**: Interaction-weighted estimator
+- **Borusyak, Jaravel & Spiess (2024)**: Imputation-based approach
+
+## Packages Compared
+
+### R Packages
+
+| Package | Method | Authors | Available |
+|---------|--------|---------|-----------|
+| `did` | Group-time ATT | Callaway & Sant'Anna | Yes |
+| `DIDmultiplegt` / `DIDmultiplegtDYN` | Robust DiD | de Chaisemartin & D'Haultfoeuille | Yes |
+| `fixest` (sunab) | Interaction-weighted | Sun & Abraham | Yes |
+| `didimputation` | Imputation | Borusyak, Jaravel & Spiess | Yes |
+
+### Python Packages
+
+| Package | Method | Authors | Available |
+|---------|--------|---------|-----------|
+| `csdid` | Group-time ATT | Callaway & Sant'Anna (port) | Yes |
+| `diff_diff` | Multiple methods | Community | Yes |
+| `did_multiplegt_dyn` | Robust DiD | de Chaisemartin & D'Haultfoeuille | **No native Python package** |
+| `pyfixest` | Sun & Abraham via feols | Community port | Yes (partial) |
+
+## Simulation Design
+
+We generate synthetic panel data with:
+
+- **1,000,000 units** observed over **10 time periods**
+- **Staggered treatment adoption**: Units receive treatment at different times (2012, 2014, 2016, 2018) or never
+- **Heterogeneous treatment effects**: Effects vary by treatment cohort and time since treatment
+- **Unit and time fixed effects**
+
+This design allows us to test whether each estimator correctly recovers the true treatment effects.
+
+## Metrics
+
+For each package, we report:
+
+1. **Execution time**: How long the estimation takes
+2. **Estimated ATT**: Compared to the true effect
+3. **Event study estimates**: Dynamic effects by time relative to treatment
+4. **Memory usage** (where available)
+
+## References
+
+- Callaway, B., & Sant'Anna, P. H. (2021). Difference-in-differences with multiple time periods. *Journal of Econometrics*.
+- de Chaisemartin, C., & D'Haultfoeuille, X. (2020). Two-way fixed effects estimators with heterogeneous treatment effects. *American Economic Review*.
+- Sun, L., & Abraham, S. (2021). Estimating dynamic treatment effects in event studies with heterogeneous treatment effects. *Journal of Econometrics*.
+- Borusyak, K., Jaravel, X., & Spiess, J. (2024). Revisiting event study designs: Robust and efficient estimation. *Review of Economic Studies*.
