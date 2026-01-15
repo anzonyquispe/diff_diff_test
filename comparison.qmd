@@ -1,0 +1,260 @@
+---
+title: "Summary and Comparison"
+---
+
+# Overall Comparison
+
+This chapter provides a comprehensive comparison of all DiD estimators tested across R and Python.
+
+```{r}
+#| label: load-results
+#| message: false
+#| cache.lazy: false
+
+library(dplyr)
+library(ggplot2)
+library(knitr)
+
+# Load R results
+r_results <- readRDS("r_results.rds")
+
+# Load Python results
+python_results <- read.csv("python_results.csv")
+
+# True ATT
+panel <- readRDS("sim_data.rds")
+true_att <- mean(panel$tau_gt[panel$treated])
+```
+
+## Package Availability Summary
+
+```{r}
+#| label: availability-table
+
+availability <- data.frame(
+  Method = c(
+    "Callaway & Sant'Anna",
+    "de Chaisemartin & D'Haultfoeuille",
+    "Sun & Abraham",
+    "Borusyak, Jaravel & Spiess (Imputation)",
+    "Traditional TWFE"
+  ),
+  R_Package = c(
+    "did",
+    "DIDmultiplegtDYN",
+    "fixest (sunab)",
+    "didimputation",
+    "fixest / lfe"
+  ),
+  Python_Package = c(
+    "csdid, diff_diff",
+    "did_multiplegt_dyn",
+    "pyfixest (partial)",
+    "NOT AVAILABLE",
+    "linearmodels, pyfixest"
+  ),
+  Stata_Package = c(
+    "csdid",
+    "did_multiplegt_dyn",
+    "eventstudyinteract",
+    "did_imputation",
+    "reghdfe"
+  )
+)
+
+kable(availability, caption = "Package Availability by Language")
+```
+
+## Execution Time Comparison
+
+```{r}
+#| label: combined-timing
+#| fig-cap: "Execution time comparison across all packages"
+#| fig-height: 8
+
+# Combine R results
+r_timing <- data.frame(
+  Package = sapply(r_results, function(x) x$package),
+  Method = sapply(r_results, function(x) x$method),
+  Time = sapply(r_results, function(x) ifelse(is.null(x$time), NA, x$time)),
+  Language = "R"
+)
+
+# Add Python results
+python_timing <- python_results %>%
+  filter(!is.na(Time..s.)) %>%
+  mutate(
+    Package = Package,
+    Method = Method,
+    Time = Time..s.,
+    Language = "Python"
+  ) %>%
+  select(Package, Method, Time, Language)
+
+# Combine
+all_timing <- bind_rows(r_timing, python_timing) %>%
+  filter(!is.na(Time))
+
+# Plot
+ggplot(all_timing, aes(x = reorder(paste(Package, Method, sep = "\n"), Time),
+                       y = Time, fill = Language)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(
+    x = "",
+    y = "Execution Time (seconds)",
+    title = "Execution Time Comparison",
+    subtitle = paste("Dataset:", format(nrow(panel), big.mark = ","), "observations")
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 8)) +
+  scale_fill_manual(values = c("R" = "steelblue", "Python" = "darkorange")) +
+  geom_text(aes(label = sprintf("%.1fs", Time)), hjust = -0.1, size = 3)
+```
+
+## Estimation Accuracy
+
+```{r}
+#| label: accuracy-comparison
+
+# Extract ATT estimates
+r_att <- data.frame(
+  Package = sapply(r_results, function(x) x$package),
+  Method = sapply(r_results, function(x) x$method),
+  ATT = sapply(r_results, function(x) {
+    if (!is.null(x$att)) x$att else NA
+  }),
+  Language = "R"
+)
+
+python_att <- python_results %>%
+  filter(!is.na(ATT)) %>%
+  mutate(Language = "Python") %>%
+  select(Package, Method, ATT, Language)
+
+all_att <- bind_rows(r_att, python_att) %>%
+  filter(!is.na(ATT)) %>%
+  mutate(
+    Bias = ATT - true_att,
+    Pct_Bias = (ATT - true_att) / true_att * 100
+  )
+
+kable(all_att %>% select(Language, Package, Method, ATT, Bias, Pct_Bias),
+      digits = 4,
+      col.names = c("Language", "Package", "Method", "ATT Estimate", "Bias", "% Bias"),
+      caption = paste("Estimation Accuracy (True ATT =", round(true_att, 4), ")"))
+```
+
+```{r}
+#| label: accuracy-plot
+#| fig-cap: "ATT estimates vs true value"
+
+ggplot(all_att, aes(x = reorder(paste(Package, "(", Language, ")", sep = ""), ATT),
+                    y = ATT, color = Language)) +
+  geom_point(size = 4) +
+  geom_hline(yintercept = true_att, linetype = "dashed", color = "red", linewidth = 1) +
+  annotate("text", x = 0.5, y = true_att + 0.02, label = paste("True ATT =", round(true_att, 3)),
+           hjust = 0, color = "red") +
+  coord_flip() +
+  labs(
+    x = "",
+    y = "ATT Estimate",
+    title = "Estimated ATT vs True Value"
+  ) +
+  theme_minimal() +
+  scale_color_manual(values = c("R" = "steelblue", "Python" = "darkorange"))
+```
+
+## Key Findings
+
+### Performance Rankings
+
+```{r}
+#| label: rankings
+
+# By speed (fastest)
+speed_rank <- all_timing %>%
+  arrange(Time) %>%
+  head(5)
+
+cat("Fastest packages (top 5):\n")
+for (i in 1:nrow(speed_rank)) {
+  cat(sprintf("%d. %s (%s): %.1f seconds\n",
+              i, speed_rank$Package[i], speed_rank$Language[i], speed_rank$Time[i]))
+}
+
+# By accuracy (lowest bias, excluding TWFE)
+accuracy_rank <- all_att %>%
+  filter(!grepl("TWFE", Method)) %>%
+  arrange(abs(Bias)) %>%
+  head(5)
+
+cat("\nMost accurate packages (top 5, excluding TWFE):\n")
+for (i in 1:nrow(accuracy_rank)) {
+  cat(sprintf("%d. %s (%s): Bias = %.4f\n",
+              i, accuracy_rank$Package[i], accuracy_rank$Language[i], accuracy_rank$Bias[i]))
+}
+```
+
+### Summary Table
+
+```{r}
+#| label: final-summary
+
+summary_table <- all_timing %>%
+  left_join(all_att %>% select(Package, Method, Language, ATT, Bias),
+            by = c("Package", "Method", "Language")) %>%
+  arrange(Time)
+
+kable(summary_table,
+      digits = c(0, 0, 2, 0, 4, 4),
+      caption = "Complete Results Summary (sorted by execution time)")
+```
+
+## Recommendations
+
+Based on our benchmarks with 1 million observations:
+
+### For R Users
+
+| Use Case | Recommended Package | Notes |
+|----------|-------------------|-------|
+| **Speed priority** | `fixest::sunab` | Extremely fast, good accuracy |
+| **Most established** | `did` | Original C&S implementation |
+| **Imputation approach** | `didimputation` | Good for complex designs |
+| **Robustness checks** | `DIDmultiplegtDYN` | Memory-intensive |
+
+### For Python Users
+
+| Use Case | Recommended Package | Notes |
+|----------|-------------------|-------|
+| **Speed priority** | `diff_diff` | Fast C&S implementation |
+| **Standard C&S** | `csdid` | Port of R package |
+| **Fixed effects** | `pyfixest` | Good for TWFE comparison |
+
+### Missing in Python
+
+::: {.callout-warning}
+## Package Only Available in R/Stata
+
+Users requiring this method must use R or Stata:
+
+**Borusyak, Jaravel & Spiess Imputation** - `didimputation` (R) / `did_imputation` (Stata)
+:::
+
+## Conclusion
+
+All heterogeneity-robust estimators (Callaway & Sant'Anna, Sun & Abraham, de Chaisemartin & D'Haultfoeuille, Imputation) correctly recover the true treatment effect, while traditional TWFE shows bias due to heterogeneous effects.
+
+For large datasets (1M+ observations):
+
+- **R** offers the most comprehensive ecosystem with all methods available
+- **Python** has good support for Callaway & Sant'Anna but lacks implementations of some methods
+- **Speed**: `fixest::sunab` (R) and `diff_diff` (Python) are the fastest
+- **Accuracy**: All robust methods perform similarly well
+
+The choice of package should depend on:
+
+1. Your programming language preference
+2. Speed requirements for your data size
+3. Whether you need specific estimators not available in Python

@@ -1,0 +1,26 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "Difference-in-Differences with Staggered Treatment: Package Comparison"
+  author: "DiD Methods Comparison"
+  date: today
+  chapters:
+    - index.qmd
+    - data_generation.qmd
+    - r_analysis.qmd
+    - python_analysis.qmd
+    - comparison.qmd
+
+format:
+  html:
+    theme: cosmo
+    code-fold: false
+    code-tools: true
+    toc: true
+    number-sections: true
+
+execute:
+  freeze: auto
+  cache: true

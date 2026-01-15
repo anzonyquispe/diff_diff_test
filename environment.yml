@@ -1,0 +1,39 @@
+# DiD Package Comparison - Conda Environment
+# Create with: conda env create -f environment.yml
+# Activate with: conda activate did_comparison
+
+name: did_comparison
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python version
+  - python=3.11
+
+  # Core scientific computing
+  - numpy>=1.24
+  - pandas>=2.0
+  - scipy>=1.10
+
+  # Visualization
+  - matplotlib>=3.7
+  - seaborn>=0.12
+
+  # Jupyter support
+  - jupyter
+  - ipykernel
+  - nbformat
+
+  # Statistics
+  - statsmodels>=0.14
+
+  # Pip-only packages
+  - pip
+  - pip:
+    # DiD packages (not on conda-forge)
+    - csdid
+    - diff-diff
+    - did-multiplegt-dyn
+    - pyfixest>=0.18.0
+    - linearmodels>=5.3
