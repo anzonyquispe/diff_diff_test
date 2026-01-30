@@ -1,0 +1,15 @@
+"Example","Model","Runtime_sec"
+"Wagepan","Baseline",1.483
+"Wagepan","Placebos",1.825
+"Wagepan","Normalized",1.991
+"Wagepan","Controls",2.718
+"Wagepan","Trends_Nonparam",1.956
+"Wagepan","Trends_Lin",6.577
+"Wagepan","Cluster",2.095
+"Wagepan","Same_Switchers",2.826
+"Wagepan","Switchers_In",1.123
+"Wagepan","Switchers_Out",1.145
+"Favara_Imbs","Baseline",1.695
+"Deryugina","Baseline",16.283
+"Gentzkow","Non_Normalized",3.56
+"Gentzkow","Normalized",3.661

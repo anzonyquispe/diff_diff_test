@@ -1,0 +1,1700 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      StataNow 19.5
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2025 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: Unlimited-user 2-core network, expiring  8 Jun 2026
+Serial number: 501909302568
+  Licensed to: Anzony QUISPE ROJAS
+               
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+. do CX/arXiv_replication.do 
+
+. *****************************************************************************
+> ***
+. * File: arXiv_replication.do
+. * Purpose: Replicate did_multiplegt_dyn examples with runtime & coefficient e
+> xport
+. * OUTPUT: runtime_stata.csv, coefficients_stata.csv
+. *****************************************************************************
+> ***
+. 
+. clear all
+
+. set more off
+
+. capture log close _all
+
+. 
+. global data_path "/Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/_
+> data"
+
+. global save_path "/Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/C
+> X"
+
+. 
+. * Initialize runtime results file (overwrite)
+. tempname fh
+
+. file open `fh' using "$save_path/runtime_stata.csv", write replace
+
+. file write `fh' `""Example","Model","Runtime_sec""' _n
+
+. file close `fh'
+
+. 
+. * Initialize coefficients file
+. tempname fh2
+
+. file open `fh2' using "$save_path/coefficients_stata.csv", write replace
+(file
+    /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/coefficients
+    > _stata.csv not found)
+
+. file write `fh2' `""Example","Model","Effect","Estimate","SE""' _n
+
+. file close `fh2'
+
+. 
+. *****************************************************************************
+> ***
+. * WAGEPAN TESTS
+. *****************************************************************************
+> ***
+. display _newline(2) "========================================================
+> ========================"
+
+
+===============================================================================
+> =
+
+. display "WAGEPAN DATASET"
+WAGEPAN DATASET
+
+. display "====================================================================
+> ============"
+===============================================================================
+> =
+
+. 
+. use "$data_path/wagepan.dta", clear
+
+. count
+  4,360
+
+. 
+. local example "Wagepan"
+
+. 
+. * Test 1: Baseline
+. local model "Baseline"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Baseline ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0409508   .0339709   -.025631   .1075325       2767 
+    Effect_2 |  .0218878   .0393388  -.0552148   .0989904       2292 
+    Effect_3 |  .0311019   .0425976  -.0523878   .1145917       1885 
+    Effect_4 |  .0181627     .04721  -.0743672   .1106925       1497 
+    Effect_5 | -.0499658   .0546254  -.1570297   .0570981       1126 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       246 
+    Effect_2 |       225 
+    Effect_3 |       212 
+    Effect_4 |       195 
+    Effect_5 |       174 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .38019916
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0235192   .0551657  -.0846036    .131642       3573 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      1052            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  3.0672389
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: .728 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. * Save coefficients
+. forvalues i = 1/5 {
+  2.     local est = e(Effect_`i')
+  3.     local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. * Test 2: Placebos
+. local model "Placebos"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Placebos ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) placebo(2) graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0409508   .0339709   -.025631   .1075325       2767 
+    Effect_2 |  .0218878   .0393388  -.0552148   .0989904       2292 
+    Effect_3 |  .0311019   .0425976  -.0523878   .1145917       1885 
+    Effect_4 |  .0181627     .04721  -.0743672   .1106925       1497 
+    Effect_5 | -.0499658   .0546254  -.1570297   .0570981       1126 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       246 
+    Effect_2 |       225 
+    Effect_3 |       212 
+    Effect_4 |       195 
+    Effect_5 |       174 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .38019916
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0235192   .0551657  -.0846036    .131642       3573 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      1052            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  3.0672389
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0883946   .0422582   -.171219  -.0055701       2222 
+   Placebo_2 |  .0370908   .0581037  -.0767902   .1509719       1376 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |       155 
+   Placebo_2 |        74 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .07047431
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: .8109999999999999 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. * Test 3: Normalized
+. local model "Normalized"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Normalized ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) placebo(2) normalized grap
+> h_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0409508   .0339709   -.025631   .1075325       2767 
+    Effect_2 |  .0140707   .0252892  -.0354952   .0636367       2292 
+    Effect_3 |  .0144914   .0198477  -.0244093   .0533922       1885 
+    Effect_4 |   .006759   .0175686  -.0276748   .0411928       1497 
+    Effect_5 | -.0152795   .0167044  -.0480196   .0174606       1126 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       246 
+    Effect_2 |       225 
+    Effect_3 |       212 
+    Effect_4 |       195 
+    Effect_5 |       174 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .38019917
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0235192   .0551657  -.0846036    .131642       3573 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      1052            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  3.0672389
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0883946   .0422582   -.171219  -.0055701       2222 
+   Placebo_2 |  .0247272   .0387358  -.0511935   .1006479       1376 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |       155 
+   Placebo_2 |        74 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .07047431
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: .851 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. * Test 4: Controls
+. local model "Controls"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Controls ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) placebo(2) controls(hours)
+>  graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0400048   .0320587  -.0228292   .1028388       2767 
+    Effect_2 |  .0109445   .0369062  -.0613904   .0832795       2292 
+    Effect_3 | -.0000808   .0413425  -.0811107   .0809491       1885 
+    Effect_4 | -.0046852   .0477967   -.098365   .0889945       1497 
+    Effect_5 | -.0704548   .0547629   -.177788   .0368784       1126 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       246 
+    Effect_2 |       225 
+    Effect_3 |       212 
+    Effect_4 |       195 
+    Effect_5 |       174 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .21468667
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff | -.0012678   .0542882  -.1076708   .1051352       3573 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      1052            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  3.0672389
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0675098   .0417436  -.1493258   .0143061       2222 
+   Placebo_2 |   .058502   .0586136  -.0563785   .1733825       1376 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |       155 
+   Placebo_2 |        74 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .11289825
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: 1.287 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. * Test 5: Trends_Nonparam
+. local model "Trends_Nonparam"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Trends_Nonparam ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) placebo(2) trends_nonparam
+> (black) graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0397498   .0337262  -.0263524   .1058519       2709 
+    Effect_2 |  .0258606   .0390807  -.0507362   .1024574       2237 
+    Effect_3 |   .033437   .0424415  -.0497468   .1166208       1840 
+    Effect_4 |  .0209026   .0466453  -.0705205   .1123257       1478 
+    Effect_5 | -.0436952    .054711  -.1509268   .0635363       1126 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       246 
+    Effect_2 |       225 
+    Effect_3 |       212 
+    Effect_4 |       195 
+    Effect_5 |       174 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .43524816
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0274088   .0548727  -.0801397   .1349573       3573 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      1052            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  3.0672389
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0931635   .0419019  -.1752898  -.0110372       2164 
+   Placebo_2 |  .0269629   .0587614  -.0882072   .1421331       1321 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |       155 
+   Placebo_2 |        74 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .06105643
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: .877 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. * Test 6: Trends_Lin
+. local model "Trends_Lin"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Trends_Lin ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) placebo(2) trends_lin grap
+> h_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 | -.0660763   .0720156  -.2072242   .0750716       2222 
+    Effect_2 | -.1974202   .1188811  -.4304229   .0355826       1807 
+    Effect_3 |    -.2674   .1735143  -.6074818   .0726818       1423 
+    Effect_4 | -.3575763   .2528076  -.8530702   .1379175       1056 
+    Effect_5 | -.5287162   .3549214  -1.224349    .166917        702 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       155 
+    Effect_2 |       134 
+    Effect_3 |       121 
+    Effect_4 |       104 
+    Effect_5 |        83 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .57579482
+
+
+-------------------------------------------------------------------------------
+> -
+    When the option trends_lin is specified no average effects are reported
+-------------------------------------------------------------------------------
+> -
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.1748082   .0939974  -.3590398   .0094234       1768 
+   Placebo_2 | -.2115019   .1354877  -.4770529   .0540491       1003 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |        95 
+   Placebo_2 |        51 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .12603254
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: 3.048 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. * Test 7: Cluster
+. local model "Cluster"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Cluster ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) placebo(2) cluster(hisp) g
+> raph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0409508   .0285618  -.0150294    .096931       2767 
+    Effect_2 |  .0218878   .0255912    -.02827   .0720456       2292 
+    Effect_3 |  .0311019   .0278902  -.0235619   .0857657       1885 
+    Effect_4 |  .0181627   .0100765  -.0015869   .0379123       1497 
+    Effect_5 | -.0499658   .0275674  -.1039969   .0040654       1126 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       246 
+    Effect_2 |       225 
+    Effect_3 |       212 
+    Effect_4 |       195 
+    Effect_5 |       174 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = 0
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0235192   .0172027  -.0101974   .0572358       3573 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      1052            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  3.0672389
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0883946   .1009126  -.2861796   .1093905       2222 
+   Placebo_2 |  .0370908   .0958357  -.1507437   .2249253       1376 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |       155 
+   Placebo_2 |        74 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = 0
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: .91 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. * Test 8: Same_Switchers
+. local model "Same_Switchers"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Same_Switchers ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) placebo(2) same_switchers 
+> graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0465925   .0409018  -.0335735   .1267586       1393 
+    Effect_2 |  .0338583   .0469162  -.0580958   .1258124       1289 
+    Effect_3 |  .0485449   .0492839  -.0480498   .1451395       1228 
+    Effect_4 |   .037483   .0510271  -.0625282   .1374943       1177 
+    Effect_5 | -.0499658   .0546254  -.1570297   .0570981       1126 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       174 
+    Effect_2 |       174 
+    Effect_3 |       174 
+    Effect_4 |       174 
+    Effect_5 |       174 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .26409028
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0356296   .0646072  -.0909981   .1622574       3391 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |       870            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  3.2794376
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0869864   .0678572  -.2199841   .0460113        848 
+   Placebo_2 |  .0782255   .0978922  -.1136396   .2700907        373 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |        83 
+   Placebo_2 |        23 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .25878134
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: 1.282 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. * Test 9: Switchers_In
+. local model "Switchers_In"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Switchers_In ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) placebo(2) switchers(in) g
+> raph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0693367   .0504151  -.0294751   .1681486       2264 
+    Effect_2 |  .0392463   .0506126  -.0599527   .1384452       1886 
+    Effect_3 |   .044619   .0584116  -.0698655   .1591036       1555 
+    Effect_4 |  .0244555   .0656956  -.1043056   .1532166       1240 
+    Effect_5 | -.0379472   .0765453  -.1879732   .1120789        932 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       143 
+    Effect_2 |       128 
+    Effect_3 |       121 
+    Effect_4 |       114 
+    Effect_5 |       100 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .56843431
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0561942   .0892194  -.1186727   .2310611       2727 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |       606            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  3.1773256
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0920766   .0498937  -.1898663   .0057132       1856 
+   Placebo_2 |  .0362437   .0687048  -.0984153   .1709026       1170 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |        98 
+   Placebo_2 |        44 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .14238189
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: .495 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. * Test 10: Switchers_Out
+. local model "Switchers_Out"
+
+. display _newline "--- `example': `model' ---"
+
+--- Wagepan: Switchers_Out ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn lwage nr year union, effects(5) placebo(2) switchers(out) 
+> graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0015411   .0410324   -.078881   .0819632        503 
+    Effect_2 | -.0010182   .0621764  -.1228817   .1208453        406 
+    Effect_3 |  .0131286   .0617731  -.1079443   .1342016        330 
+    Effect_4 |  .0093061   .0660924  -.1202325   .1388448        257 
+    Effect_5 | -.0662072   .0761447   -.215448   .0830336        194 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       103 
+    Effect_2 |        97 
+    Effect_3 |        91 
+    Effect_4 |        81 
+    Effect_5 |        74 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .7143538
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff | -.0081433   .0657594  -.1370294   .1207428        846 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |       446            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  2.9605634
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0820641   .0764613  -.2319255   .0677973        366 
+   Placebo_2 |  .0383334   .1019181  -.1614224   .2380892        206 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |        57 
+   Placebo_2 |        30 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .46346276
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: .49 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. *****************************************************************************
+> ***
+. * FAVARA-IMBS
+. *****************************************************************************
+> ***
+. display _newline(2) "========================================================
+> ========================"
+
+
+===============================================================================
+> =
+
+. display "FAVARA-IMBS DATASET"
+FAVARA-IMBS DATASET
+
+. display "====================================================================
+> ============"
+===============================================================================
+> =
+
+. 
+. use "$data_path/favara_imbs.dta", clear
+
+. count
+  12,538
+
+. 
+. local example "Favara_Imbs"
+
+. local model "Baseline"
+
+. display _newline "--- `example': `model' ---"
+
+--- Favara_Imbs: Baseline ---
+
+. timer clear 1
+
+. timer on 1
+
+. did_multiplegt_dyn Dl_hpi county year inter_bra, effects(5) placebo(3) cluste
+> r(state_n) graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0024103   .0029988  -.0034672   .0082878       3948 
+    Effect_2 |  .0055268   .0038888  -.0020951   .0131487       3137 
+    Effect_3 |  .0081492   .0051571  -.0019585   .0182569       2524 
+    Effect_4 |  .0116607   .0059147   .0000681   .0232532       1976 
+    Effect_5 |  .0173245   .0065489    .004489     .03016       1844 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       890 
+    Effect_2 |       889 
+    Effect_3 |       889 
+    Effect_4 |       889 
+    Effect_5 |       889 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .20717416
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0041924   .0018366   .0005928    .007792       8276 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      4446            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  2.9922578
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0023696   .0036522  -.0095279   .0047887       2930 
+   Placebo_2 |  .0027088   .0074289  -.0118515   .0172692       1444 
+   Placebo_3 | -.0109803   .0055698   -.021897  -.0000636        987 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |       887 
+   Placebo_2 |       668 
+   Placebo_3 |       548 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .14195542
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+
+. timer off 1
+
+. qui timer list 1
+
+. local t = r(t1)
+
+. display "Runtime: `t' seconds"
+Runtime: .8220000000000001 seconds
+
+. file open fh using "$save_path/runtime_stata.csv", write append
+
+. file write fh `""`example'","`model'",`t'"' _n
+
+. file close fh
+
+. forvalues i = 1/5 {
+  2.     capture local est = e(Effect_`i')
+  3.     capture local se = e(SE_Effect_`i')
+  4.     file open fh using "$save_path/coefficients_stata.csv", write append
+  5.     file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.     file close fh
+  7. }
+
+. 
+. *****************************************************************************
+> ***
+. * DERYUGINA
+. *****************************************************************************
+> ***
+. display _newline(2) "========================================================
+> ========================"
+
+
+===============================================================================
+> =
+
+. display "DERYUGINA (2017)"
+DERYUGINA (2017)
+
+. display "====================================================================
+> ============"
+===============================================================================
+> =
+
+. 
+. capture confirm file "$data_path/deryugina_2017.dta"
+
+. if _rc == 0 {
+.     use "$data_path/deryugina_2017.dta", clear
+.     count
+  49,698
+. 
+.     local example "Deryugina"
+.     local model "Baseline"
+.     display _newline "--- `example': `model' ---"
+
+--- Deryugina: Baseline ---
+.     timer clear 1
+.     timer on 1
+.     did_multiplegt_dyn log_curr_trans_ind_gov_pc county_fips year hurricane, 
+> effects(11) placebo(11) cluster(county_fips) graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0108629    .001617   .0076937   .0140321      14240 
+    Effect_2 |  .0127918   .0023651   .0081563   .0174273      13953 
+    Effect_3 |  .0158005   .0030075   .0099059    .021695      13766 
+    Effect_4 |  .0163886    .003393   .0097385   .0230388      13620 
+    Effect_5 |  .0230699   .0038968   .0154322   .0307076      13462 
+    Effect_6 |  .0268285   .0042508   .0184972   .0351598      13253 
+    Effect_7 |  .0377147   .0044926   .0289095     .04652      13038 
+    Effect_8 |  .0392922   .0050394   .0294151   .0491694      12929 
+    Effect_9 |   .035109   .0055185   .0242929   .0459251      12840 
+   Effect_10 |  .0494016    .006029   .0375849   .0612182      12741 
+   Effect_11 |  .0518123   .0061055   .0398457   .0637788      12619 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |       361 
+    Effect_2 |       361 
+    Effect_3 |       361 
+    Effect_4 |       361 
+    Effect_5 |       361 
+    Effect_6 |       361 
+    Effect_7 |       361 
+    Effect_8 |       361 
+    Effect_9 |       361 
+   Effect_10 |       361 
+   Effect_11 |       361 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = 0
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .3190721   .0406001   .2394973   .3986468      31470 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      3971            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  11
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0055903   .0013173   -.008172  -.0030085      14154 
+   Placebo_2 | -.0083554   .0020689  -.0124104  -.0043003      13826 
+   Placebo_3 | -.0128183    .002977  -.0186532  -.0069834      13567 
+   Placebo_4 |  -.009143   .0033686  -.0157454  -.0025406      13302 
+   Placebo_5 | -.0075546   .0039816  -.0153585   .0002493      13005 
+   Placebo_6 | -.0073115   .0043748   -.015886    .001263      12682 
+   Placebo_7 | -.0079583   .0047566  -.0172812   .0013645      12431 
+   Placebo_8 |  -.008841   .0053184  -.0192648   .0015829      12214 
+   Placebo_9 | -.0143816   .0058363  -.0258204  -.0029427      11829 
+  Placebo_10 | -.0086498   .0061281  -.0206606   .0033611      10807 
+  Placebo_11 | -.0035924   .0066904  -.0167053   .0095206      10012 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |       361 
+   Placebo_2 |       361 
+   Placebo_3 |       361 
+   Placebo_4 |       361 
+   Placebo_5 |       361 
+   Placebo_6 |       361 
+   Placebo_7 |       361 
+   Placebo_8 |       361 
+   Placebo_9 |       361 
+  Placebo_10 |       299 
+  Placebo_11 |       282 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = 1.517e-06
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+.     timer off 1
+.     qui timer list 1
+.     local t = r(t1)
+.     display "Runtime: `t' seconds"
+Runtime: 8.909000000000001 seconds
+.     file open fh using "$save_path/runtime_stata.csv", write append
+.     file write fh `""`example'","`model'",`t'"' _n
+.     file close fh
+.     forvalues i = 1/11 {
+  2.         capture local est = e(Effect_`i')
+  3.         capture local se = e(SE_Effect_`i')
+  4.         file open fh using "$save_path/coefficients_stata.csv", write appe
+> nd
+  5.         file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.         file close fh
+  7.     }
+. }
+
+. else {
+.     display "Dataset not found."
+. }
+
+. 
+. *****************************************************************************
+> ***
+. * GENTZKOW
+. *****************************************************************************
+> ***
+. display _newline(2) "========================================================
+> ========================"
+
+
+===============================================================================
+> =
+
+. display "GENTZKOW (2011)"
+GENTZKOW (2011)
+
+. display "====================================================================
+> ============"
+===============================================================================
+> =
+
+. 
+. capture confirm file "$data_path/gentzkow.dta"
+
+. if _rc == 0 {
+.     use "$data_path/gentzkow.dta", clear
+.     count
+  16,872
+. 
+.     local example "Gentzkow"
+. 
+.     * Non-normalized
+.     local model "Non_Normalized"
+.     display _newline "--- `example': `model' ---"
+
+--- Gentzkow: Non_Normalized ---
+.     timer clear 1
+.     timer on 1
+.     did_multiplegt_dyn prestout cnty90 year numdailies, effects(4) placebo(4)
+>  graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0144244   .0042477   .0060992   .0227497       5674 
+    Effect_2 |  .0190899   .0058429   .0076381   .0305418       4648 
+    Effect_3 |  .0207147   .0079164   .0051989   .0362305       3750 
+    Effect_4 |  .0272653   .0097924   .0080727    .046458       2980 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |      1119 
+    Effect_2 |      1054 
+    Effect_3 |       984 
+    Effect_4 |       917 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .00681389
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0160565   .0047761   .0066956   .0254174       8659 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      4074            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  2.4375615
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0005025   .0051322  -.0105615   .0095565       4471 
+   Placebo_2 |  .0020594   .0085031  -.0146063   .0187251       2778 
+   Placebo_3 | -.0015365   .0116825  -.0244337   .0213607       1644 
+   Placebo_4 |  .0006573   .0175032  -.0336483   .0349628        910 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |       902 
+   Placebo_2 |       746 
+   Placebo_3 |       604 
+   Placebo_4 |       441 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .99219793
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+.     timer off 1
+.     qui timer list 1
+.     local t = r(t1)
+.     display "Runtime: `t' seconds"
+Runtime: 2.133 seconds
+.     file open fh using "$save_path/runtime_stata.csv", write append
+.     file write fh `""`example'","`model'",`t'"' _n
+.     file close fh
+.     forvalues i = 1/4 {
+  2.         capture local est = e(Effect_`i')
+  3.         capture local se = e(SE_Effect_`i')
+  4.         file open fh using "$save_path/coefficients_stata.csv", write appe
+> nd
+  5.         file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.         file close fh
+  7.     }
+. 
+.     * Normalized
+.     local model "Normalized"
+.     display _newline "--- `example': `model' ---"
+
+--- Gentzkow: Normalized ---
+.     timer clear 1
+.     timer on 1
+.     did_multiplegt_dyn prestout cnty90 year numdailies, effects(4) placebo(4)
+>  normalized graph_off
+
+
+-------------------------------------------------------------------------------
+> -
+             Estimation of treatment effects: Event-study effects
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+    Effect_1 |  .0120186   .0035392   .0050819   .0189552       5674 
+    Effect_2 |  .0082126   .0025136   .0032859   .0131392       4648 
+    Effect_3 |  .0057192   .0021857   .0014354    .010003       3750 
+    Effect_4 |  .0053873   .0019348   .0015951   .0091795       2980 
+
+             | Switchers 
+-------------+----------
+    Effect_1 |      1119 
+    Effect_2 |      1054 
+    Effect_3 |       984 
+    Effect_4 |       917 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the effects : p-value = .00681389
+
+
+-------------------------------------------------------------------------------
+> -
+               Average cumulative (total) effect per treatment unit
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+  Av_tot_eff |  .0160565   .0047761   .0066956   .0254174       8659 
+
+             |    Switch  x Periods 
+-------------+---------------------
+  Av_tot_eff |      4074            
+-------------------------------------------------------------------------------
+> -
+Average number of time periods over which a treatment's effect is accumulated =
+>  2.4375615
+
+
+-------------------------------------------------------------------------------
+> -
+          Testing the parallel trends and no anticipation assumptions
+-------------------------------------------------------------------------------
+> -
+
+             |  Estimate         SE      LB CI      UB CI          N 
+-------------+-------------------------------------------------------
+   Placebo_1 | -.0004158    .004247  -.0087399   .0079082       4471 
+   Placebo_2 |  .0008699   .0035919  -.0061701   .0079099       2778 
+   Placebo_3 | -.0004201   .0031943  -.0066808   .0058406       1644 
+   Placebo_4 |  .0001394   .0037128  -.0071375   .0074164        910 
+
+             | Switchers 
+-------------+----------
+   Placebo_1 |       902 
+   Placebo_2 |       746 
+   Placebo_3 |       604 
+   Placebo_4 |       441 
+-------------------------------------------------------------------------------
+> -
+Test of joint nullity of the placebos : p-value = .99219793
+
+
+The development of this package was funded by the European Union (ERC, REALLYCR
+> EDIBLE,GA N°101043899).
+.     timer off 1
+.     qui timer list 1
+.     local t = r(t1)
+.     display "Runtime: `t' seconds"
+Runtime: 2.238 seconds
+.     file open fh using "$save_path/runtime_stata.csv", write append
+.     file write fh `""`example'","`model'",`t'"' _n
+.     file close fh
+.     forvalues i = 1/4 {
+  2.         capture local est = e(Effect_`i')
+  3.         capture local se = e(SE_Effect_`i')
+  4.         file open fh using "$save_path/coefficients_stata.csv", write appe
+> nd
+  5.         file write fh `""`example'","`model'",`i',`est',`se'"' _n
+  6.         file close fh
+  7.     }
+. }
+
+. else {
+.     display "Dataset not found."
+. }
+
+. 
+. *****************************************************************************
+> ***
+. * SUMMARY
+. *****************************************************************************
+> ***
+. display _newline(2) "========================================================
+> ========================"
+
+
+===============================================================================
+> =
+
+. display "RESULTS SUMMARY"
+RESULTS SUMMARY
+
+. display "====================================================================
+> ============"
+===============================================================================
+> =
+
+. display "Runtime saved to: $save_path/runtime_stata.csv"
+Runtime saved to: /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/
+> runtime_stata.csv
+
+. display "Coefficients saved to: $save_path/coefficients_stata.csv"
+Coefficients saved to: /Users/anzony.quisperojas/Documents/GitHub/diff_diff_tes
+> t/CX/coefficients_stata.csv
+
+. display "====================================================================
+> ============"
+===============================================================================
+> =
+
+. 
+end of do-file

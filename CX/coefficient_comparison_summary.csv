@@ -1,0 +1,15 @@
+Example,Model,Est_Diff_Mean,Est_Diff_MaxAbs,SE_Diff_Mean,SE_Diff_MaxAbs,SE_Ratio_Mean,SE_Ratio_Min,SE_Ratio_Max
+Deryugina,Baseline,0.0,1e-08,-0.0,0.0,1.0,0.99999999,1.00000001
+Favara_Imbs,Baseline,-0.0,0.0,0.0,0.0,1.00000002,1.0,1.00000005
+Gentzkow,Non_Normalized,-0.0,0.0,0.0,0.0,1.0,1.0,1.00000002
+Gentzkow,Normalized,-0.0,0.0,0.0,0.0,1.00000001,0.99999997,1.00000003
+Wagepan,Baseline,0.0,1e-08,-0.0,0.0,0.99999996,0.99999995,0.99999997
+Wagepan,Cluster,0.0,1e-08,0.0,0.0,1.00000002,0.99999992,1.00000016
+Wagepan,Controls,0.0,1e-08,-0.0,0.0,0.99999997,0.99999994,1.0
+Wagepan,Normalized,0.0,0.0,-0.0,0.0,0.99999998,0.99999993,1.00000003
+Wagepan,Placebos,0.0,1e-08,-0.0,0.0,0.99999997,0.99999995,1.0
+Wagepan,Same_Switchers,1e-08,1e-08,-0.0,0.0,0.99999997,0.99999995,1.00000002
+Wagepan,Switchers_In,0.0,2e-08,-0.0,0.0,0.99999997,0.99999994,1.0
+Wagepan,Switchers_Out,-0.0,1e-08,-0.0,0.0,0.99999999,0.99999997,1.00000002
+Wagepan,Trends_Lin,-0.0,1e-08,-0.0,1e-08,0.99999999,0.99999996,1.00000001
+Wagepan,Trends_Nonparam,0.0,1e-08,0.0,0.0,1.0,0.99999999,1.00000001
