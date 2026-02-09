@@ -197,10 +197,8 @@ gen rel_timeminus12=(year==cohort-1-12)
 gen rel_timeminus13=(year<=cohort-1-13)
 drop rel_time14 rel_time15 rel_time16
 replace rel_time13=(year>=cohort-1+13)
+drop rel_time
 
-* Save prepared data
-tempfile wolfers_base
-save `wolfers_base'
 
 ********************************************************************************
 * SCENARIO 1: Original Data (~1,683 rows)
@@ -216,7 +214,6 @@ local n_rows = `orig_N'
 * 1. did_multiplegt_dyn (De Chaisemartin & D'Haultfoeuille)
 * -------------------------------------------------------------------------
 display _n "1. Running did_multiplegt_dyn..."
-use `wolfers_base', clear
 
 timer clear 1
 timer on 1
@@ -249,7 +246,6 @@ else {
 *       analytical SE estimators
 * -------------------------------------------------------------------------
 display _n "2. Running csdid (Callaway-Sant'Anna) [uses bootstrap]..."
-use `wolfers_base', clear
 
 timer clear 1
 timer on 1
@@ -285,10 +281,13 @@ else {
 * 3. did_imputation (Borusyak, Jaravel & Spiess)
 * -------------------------------------------------------------------------
 display _n "3. Running did_imputation (Borusyak-Jaravel-Spiess)..."
-use `wolfers_base', clear
 
 timer clear 1
 timer on 1
+
+local scenario "Original (1.7K)"
+local n_rows = `orig_N'
+
 
 capture noisily did_imputation div_rate state year first_treat_imp [aw=stpop], horizons(0/12) autosample minn(0) pre(13)
 
@@ -321,27 +320,14 @@ else {
 * 4. eventstudyinteract (Sun & Abraham)
 * -------------------------------------------------------------------------
 display _n "4. Running eventstudyinteract (Sun-Abraham)..."
-use `wolfers_base', clear
+local scenario "Original (1.7K)"
+local n_rows = _N
 
-* Prepare for eventstudyinteract - need relative time dummies
-* Keep only observations with valid relative time
-drop if rel_time == -1000
-keep if rel_time >= -9 & rel_time <= 16
-
-* Create cohort variable (first_treat already exists)
-* Generate relative time indicators
-forvalues k = 9(-1)2 {
-    gen g_`k' = (rel_time == -`k')
-}
-* ref period is -1
-forvalues k = 0/16 {
-    gen g`k' = (rel_time == `k')
-}
 
 timer clear 1
 timer on 1
 
-capture noisily eventstudyinteract div_rate rel_time* [aweight=stpop], absorb(i.state i.year) cohort(first_treat_imp) control_cohort(controlgroup) vce(cluster state)
+capture noisily eventstudyinteract div_rate rel_time* [aweight=stpop], absorb(i.state i.year) cohort(first_treat) control_cohort(controlgroup) vce(cluster state)
 
 local rc = _rc
 timer off 1
@@ -375,7 +361,6 @@ display _n "====================================================================
 display "SCENARIO 2: Synthetic Data 100x"
 display "========================================================================"
 
-use `wolfers_base', clear
 create_synthetic_data, multiplier(100)
 
 local n_rows = _N
@@ -383,14 +368,11 @@ display "Synthetic data rows: `n_rows'"
 
 local scenario "100x (168K)"
 
-tempfile wolfers_100x
-save `wolfers_100x'
 
 * -------------------------------------------------------------------------
 * 1. did_multiplegt_dyn - 100x
 * -------------------------------------------------------------------------
 display _n "1. Running did_multiplegt_dyn on 100x data..."
-use `wolfers_100x', clear
 
 timer clear 1
 timer on 1
@@ -418,7 +400,6 @@ else {
 * 2. csdid - 100x
 * -------------------------------------------------------------------------
 display _n "2. Running csdid on 100x data..."
-use `wolfers_100x', clear
 
 timer clear 1
 timer on 1
@@ -445,18 +426,19 @@ else {
 * 3. did_imputation - 100x
 * -------------------------------------------------------------------------
 display _n "3. Running did_imputation on 100x data..."
-use `wolfers_100x', clear
 
 timer clear 1
 timer on 1
 
-capture noisily did_imputation div_rate state year first_treat_imp [aw=stop],  horizons(0/12) autosample minn(0) pre(13)
+capture noisily did_imputation div_rate state year first_treat_imp [aw=stpop],  horizons(0/12) autosample minn(0) pre(13)
 
 local rc = _rc
 timer off 1
 quietly timer list 1
 local elapsed = r(t1)
 
+local scenario "100x (168K)"
+local n_rows = _N
 if `rc' == 0 {
     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
     store_result, scenario("`scenario'") package("did_imputation-BJS") ///
@@ -472,12 +454,14 @@ else {
 * 4. eventstudyinteract (Sun & Abraham)
 * -------------------------------------------------------------------------
 display _n "4. Running eventstudyinteract (Sun-Abraham)..."
-use `wolfers_100x', clear
+
+local scenario "100x (168K)"
+local n_rows = _N
 
 timer clear 1
 timer on 1
 
-capture noisily eventstudyinteract div_rate rel_time* [aweight=stpop], absorb(i.state i.year) cohort(first_treat_imp) control_cohort(controlgroup) vce(cluster state)
+capture noisily eventstudyinteract div_rate rel_time* [aweight=stpop], absorb(i.state i.year) cohort(first_treat) control_cohort(controlgroup) vce(cluster state)
 
 local rc = _rc
 timer off 1
@@ -512,21 +496,18 @@ display "SCENARIO 3: Synthetic Data 1000x"
 display "========================================================================"
 
 use `wolfers_base', clear
-create_synthetic_data, multiplier(1000)
+create_synthetic_data, multiplier(10)
 
 local n_rows = _N
 display "Synthetic data rows: `n_rows'"
 
 local scenario "1000x (1.68M)"
 
-tempfile wolfers_1000x
-save `wolfers_1000x'
 
 * -------------------------------------------------------------------------
 * 1. did_multiplegt_dyn - 1000x
 * -------------------------------------------------------------------------
 display _n "1. Running did_multiplegt_dyn on 1000x data..."
-use `wolfers_1000x', clear
 
 timer clear 1
 timer on 1
@@ -554,7 +535,6 @@ else {
 * 2. did_imputation - 1000x
 * -------------------------------------------------------------------------
 display _n "2. Running did_imputation on 1000x data..."
-use `wolfers_1000x', clear
 
 timer clear 1
 timer on 1
@@ -581,7 +561,6 @@ else {
 * 3. csdid - 1000x
 * -------------------------------------------------------------------------
 display _n "2. Running csdid on 1000x data..."
-use `wolfers_1000x', clear
 
 timer clear 1
 timer on 1
@@ -609,12 +588,11 @@ else {
 * 4. eventstudyinteract (Sun & Abraham)
 * -------------------------------------------------------------------------
 display _n "4. Running eventstudyinteract (Sun-Abraham)..."
-use `wolfers_1000x', clear
 
 timer clear 1
 timer on 1
 
-capture noisily eventstudyinteract div_rate rel_time* [aweight=stpop], absorb(i.state i.year) cohort(first_treat_imp) control_cohort(controlgroup) vce(cluster state)
+capture noisily eventstudyinteract div_rate rel_time* [aweight=stpop], absorb(i.state i.year) cohort(first_treat) control_cohort(controlgroup) vce(cluster state)
 
 local rc = _rc
 timer off 1

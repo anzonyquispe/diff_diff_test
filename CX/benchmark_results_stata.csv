@@ -1,0 +1,13 @@
+scenario,package,rows,time_seconds,status,coefficient,std_error
+Original (1.7K),did_multiplegt_dyn,1683,2.807,completed,.3009668500732858,.0875907705688172
+Original (1.7K),csdid-CS,1683,4.886,completed,.14884086747207,
+Original (1.7K),did_imputation-BJS,1683,.747,completed,.2649128947596182,
+Original (1.7K),eventstudyinteract-SA,1683,.753,completed,.2897948500627769,
+100x (168K),did_multiplegt_dyn,168300,47.417,completed,,
+100x (168K),csdid-CS,168300,184.533,completed,,
+100x (168K),did_imputation-BJS,168300,30.69,completed,,
+100x (168K),eventstudyinteract-SA,168300,51.617,completed,.2897948500627902,
+1000x (1.68M),did_multiplegt_dyn,1683000,543.278,completed,,
+1000x (1.68M),csdid-CS,1683000,2253.447,completed,,
+1000x (1.68M),eventstudyinteract-SA,1683000,507.737,completed,.2897948500624561,
+1000x (1.68M),did_imputation-BJS,1683000,241.725,completed,,

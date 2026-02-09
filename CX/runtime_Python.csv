@@ -1,10 +1,10 @@
 scenario,package,rows,time_seconds,status
-Original (1.7K),DIDmultiplegtDYN,1683,3.5322530269622803,completed
-Original (1.7K),did-CS,1683,1.2690551280975342,completed
-Original (1.7K),fixest-SA,1683,6.656035661697388,completed
-100x (168K),DIDmultiplegtDYN,168300,7.1605119705200195,completed
-100x (168K),did-CS,168300,3.604722738265991,completed
-100x (168K),fixest-SA,168300,8.054259061813354,completed
-1000x (1.68M),DIDmultiplegtDYN,1683000,295.90835189819336,completed
-1000x (1.68M),did-CS,1683000,100.70567917823792,completed
-1000x (1.68M),fixest-SA,1683000,300.0,timeout: Exceeded 300 seconds
+Original (1.7K),DIDmultiplegtDYN,1683,3.3699839115142822,completed
+Original (1.7K),did-CS,1683,1.0123717784881592,completed
+Original (1.7K),fixest-SA,1683,4.576947212219238,completed
+100x (168K),DIDmultiplegtDYN,168300,6.389712810516357,completed
+100x (168K),did-CS,168300,3.162477731704712,completed
+100x (168K),fixest-SA,168300,4.301730155944824,completed
+1000x (1.68M),DIDmultiplegtDYN,1683000,36.72177720069885,completed
+1000x (1.68M),did-CS,1683000,40.555070877075195,completed
+1000x (1.68M),fixest-SA,1683000,52.46134901046753,completed

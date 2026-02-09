@@ -1,22 +1,34 @@
-scenario,package,rows,time_seconds,status,platform,package_std
-Original (1.7K),DIDmultiplegtDYN,1683,3.5322530269622803,completed,Python,did_multiplegt_dyn
-Original (1.7K),did-CS,1683,1.2690551280975342,completed,Python,csdid (CS)
-Original (1.7K),fixest-SA,1683,6.656035661697388,completed,Python,Sun-Abraham
-100x (168K),DIDmultiplegtDYN,168300,7.1605119705200195,completed,Python,did_multiplegt_dyn
-100x (168K),did-CS,168300,3.604722738265991,completed,Python,csdid (CS)
-100x (168K),fixest-SA,168300,8.054259061813354,completed,Python,Sun-Abraham
-1000x (1.68M),DIDmultiplegtDYN,1683000,295.90835189819336,completed,Python,did_multiplegt_dyn
-1000x (1.68M),did-CS,1683000,100.70567917823792,completed,Python,csdid (CS)
-1000x (1.68M),fixest-SA,1683000,300.0,timeout: Exceeded 300 seconds,Python,Sun-Abraham
-Original (1.7K),DIDmultiplegtDYN,1683,3.83122396469116,completed,R,did_multiplegt_dyn
-Original (1.7K),did-CS,1683,0.910514116287231,completed,R,csdid (CS)
-Original (1.7K),didimputation,1683,0.0575640201568604,completed,R,did_imputation (BJS)
-Original (1.7K),fixest-SA,1683,0.128536939620972,completed,R,Sun-Abraham
-100x (168K),DIDmultiplegtDYN,168300,9.71142888069153,completed,R,did_multiplegt_dyn
-100x (168K),did-CS,168300,1.60572409629822,completed,R,csdid (CS)
-100x (168K),didimputation,168300,13.0330519676208,completed,R,did_imputation (BJS)
-100x (168K),fixest-SA,168300,7.80491495132446,completed,R,Sun-Abraham
-1000x (1.68M),DIDmultiplegtDYN,1683000,42.8445730209351,completed,R,did_multiplegt_dyn
-1000x (1.68M),did-CS,1683000,9.03677797317505,completed,R,csdid (CS)
-1000x (1.68M),didimputation,1683000,44680.2055230141,completed,R,did_imputation (BJS)
-1000x (1.68M),fixest-SA,1683000,81.2526640892029,completed,R,Sun-Abraham
+scenario,package,rows,time_seconds,status,platform,coefficient,std_error,package_std
+Original (1.7K),DIDmultiplegtDYN,1683,3.3699839115142822,completed,Python,,,did_multiplegt_dyn
+Original (1.7K),did-CS,1683,1.0123717784881592,completed,Python,,,csdid (CS)
+Original (1.7K),fixest-SA,1683,4.576947212219238,completed,Python,,,Sun-Abraham
+100x (168K),DIDmultiplegtDYN,168300,6.389712810516357,completed,Python,,,did_multiplegt_dyn
+100x (168K),did-CS,168300,3.162477731704712,completed,Python,,,csdid (CS)
+100x (168K),fixest-SA,168300,4.301730155944824,completed,Python,,,Sun-Abraham
+1000x (1.68M),DIDmultiplegtDYN,1683000,36.72177720069885,completed,Python,,,did_multiplegt_dyn
+1000x (1.68M),did-CS,1683000,40.555070877075195,completed,Python,,,csdid (CS)
+1000x (1.68M),fixest-SA,1683000,52.46134901046753,completed,Python,,,Sun-Abraham
+Original (1.7K),DIDmultiplegtDYN,1683,3.83122396469116,completed,R,,,did_multiplegt_dyn
+Original (1.7K),did-CS,1683,0.910514116287231,completed,R,,,csdid (CS)
+Original (1.7K),didimputation,1683,0.0575640201568604,completed,R,,,did_imputation (BJS)
+Original (1.7K),fixest-SA,1683,0.128536939620972,completed,R,,,Sun-Abraham
+100x (168K),DIDmultiplegtDYN,168300,9.71142888069153,completed,R,,,did_multiplegt_dyn
+100x (168K),did-CS,168300,1.60572409629822,completed,R,,,csdid (CS)
+100x (168K),didimputation,168300,13.0330519676208,completed,R,,,did_imputation (BJS)
+100x (168K),fixest-SA,168300,7.80491495132446,completed,R,,,Sun-Abraham
+1000x (1.68M),DIDmultiplegtDYN,1683000,42.8445730209351,completed,R,,,did_multiplegt_dyn
+1000x (1.68M),did-CS,1683000,9.03677797317505,completed,R,,,csdid (CS)
+1000x (1.68M),didimputation,1683000,44680.2055230141,completed,R,,,did_imputation (BJS)
+1000x (1.68M),fixest-SA,1683000,81.2526640892029,completed,R,,,Sun-Abraham
+Original (1.7K),did_multiplegt_dyn,1683,2.807,completed,Stata,0.3009668500732858,0.0875907705688172,did_multiplegt_dyn
+Original (1.7K),csdid-CS,1683,4.886,completed,Stata,0.14884086747207,,csdid (CS)
+Original (1.7K),did_imputation-BJS,1683,0.747,completed,Stata,0.2649128947596182,,did_imputation (BJS)
+Original (1.7K),eventstudyinteract-SA,1683,0.753,completed,Stata,0.2897948500627769,,Sun-Abraham
+100x (168K),did_multiplegt_dyn,168300,47.417,completed,Stata,,,did_multiplegt_dyn
+100x (168K),csdid-CS,168300,184.533,completed,Stata,,,csdid (CS)
+100x (168K),did_imputation-BJS,168300,30.69,completed,Stata,,,did_imputation (BJS)
+100x (168K),eventstudyinteract-SA,168300,51.617,completed,Stata,0.2897948500627902,,Sun-Abraham
+1000x (1.68M),did_multiplegt_dyn,1683000,543.278,completed,Stata,,,did_multiplegt_dyn
+1000x (1.68M),csdid-CS,1683000,2253.447,completed,Stata,,,csdid (CS)
+1000x (1.68M),eventstudyinteract-SA,1683000,507.737,completed,Stata,0.2897948500624561,,Sun-Abraham
+1000x (1.68M),did_imputation-BJS,1683000,241.725,completed,Stata,,,did_imputation (BJS)
