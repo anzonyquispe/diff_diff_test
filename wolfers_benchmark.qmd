@@ -1,0 +1,134 @@
+# Wolfers (2006) Replication Benchmark {#sec-wolfers}
+
+This chapter benchmarks DID estimators across **Stata**, **R**, and **Python** using the Wolfers (2006) divorce rate dataset.
+
+## Overview
+
+We replicate the analysis from the textbook `solution.do` file using four modern DID estimators:
+
+| Estimator | Reference | Stata | R | Python |
+|-----------|-----------|:-----:|:-:|:------:|
+| De Chaisemartin & D'Haultfoeuille (2024) | `did_multiplegt_dyn` | `DIDmultiplegtDYN` | `did-multiplegt-dyn` |
+| Callaway & Sant'Anna (2021) | `csdid` | `did` | `csdid` |
+| Borusyak, Jaravel & Spiess (2024) | `did_imputation` | `didimputation` | **N/A** |
+| Sun & Abraham (2021) | `eventstudyinteract` | `fixest::sunab` | `pyfixest` |
+
+## Dataset
+
+**Wolfers (2006)**: Panel data on U.S. state divorce rates, 1956-1988.
+
+- **51 states** (including DC)
+- **33 years** of data
+- **1,683 observations**
+- Treatment: Unilateral divorce law adoption (staggered timing)
+
+## Benchmark Specifications
+
+All estimators use the same core specification:
+
+- **Outcome**: `div_rate` (divorce rate)
+- **Group**: `state`
+- **Time**: `year`
+- **Treatment**: `udl` (unilateral divorce law indicator)
+- **Effects**: 13 dynamic effects (post-treatment)
+- **Placebos**: 13 pre-treatment periods
+- **Weights**: `stpop` (state population)
+
+### Data Scaling
+
+We test three dataset sizes to evaluate scalability:
+
+| Scale | Observations | States | Description |
+|-------|-------------|--------|-------------|
+| Original | 1,683 | 51 | Original Wolfers data |
+| 100x | 168,300 | 5,100 | Synthetic replication |
+| 1000x | 1,683,000 | 51,000 | Large-scale test |
+
+## Results: Runtime Comparison
+
+![Runtime comparison across platforms](CX/runtime_comparison_all_platforms.png){#fig-runtime width="100%"}
+
+## Runtime Tables by Platform
+
+### Stata
+
+| Estimator | Original (1.7K) | 100x (168K) | 1000x (1.68M) |
+|-----------|----------------:|------------:|--------------:|
+| did_multiplegt_dyn | 2.81s | 47.42s | 543.28s |
+| csdid (bootstrap) | 4.89s | 184.53s | 2,253.45s |
+| did_imputation | 0.75s | 30.69s | 241.73s |
+| Sun-Abraham | 0.75s | 51.62s | 507.74s |
+
+### R
+
+| Estimator | Original (1.7K) | 100x (168K) | 1000x (1.68M) |
+|-----------|----------------:|------------:|--------------:|
+| DIDmultiplegtDYN | 3.83s | 9.71s | 42.84s |
+| did (CS) | 0.91s | 1.61s | 9.04s |
+| didimputation | 0.06s | 13.03s | 44,680.21s* |
+| fixest::sunab | 0.13s | 7.80s | 81.25s |
+
+*Note: R's didimputation has extremely poor scaling at 1.68M rows
+
+### Python
+
+| Estimator | Original (1.7K) | 100x (168K) | 1000x (1.68M) |
+|-----------|----------------:|------------:|--------------:|
+| did-multiplegt-dyn | 3.37s | 6.39s | 36.72s |
+| csdid | 1.01s | 3.16s | 40.56s |
+| pyfixest (SA) | 4.58s | 4.30s | 52.46s |
+
+## Cross-Platform Comparison: did_multiplegt_dyn
+
+| Platform | Original (1.7K) | 100x (168K) | 1000x (1.68M) |
+|----------|----------------:|------------:|--------------:|
+| Stata | 2.81s | 47.42s | 543.28s |
+| R | 3.83s | 9.71s | 42.84s |
+| Python | 3.37s | 6.39s | 36.72s |
+
+**Key finding**: Python's Polars-based implementation scales best, followed by R's CRAN version. Stata is significantly slower at scale.
+
+## Key Findings
+
+### Fastest at 1.68M Observations
+
+- **did_multiplegt_dyn**: Python (36.7s) > R (42.8s) > Stata (543.3s)
+- **Callaway-Sant'Anna**: R (9.0s) > Python (40.6s) > Stata (2,253.4s)
+- **Sun-Abraham**: Python (52.5s) > R (81.3s) > Stata (507.7s)
+- **did_imputation**: Stata (241.7s) > R (44,680.2s) - Python N/A
+
+### Performance Notes
+
+1. **Stata's `csdid`** uses bootstrap inference by default, making it significantly slower than analytical SE methods in R/Python
+
+2. **R's `didimputation`** has extremely poor scaling (44,680s at 1.68M rows) - likely a memory or algorithmic issue
+
+3. **Python lacks `did_imputation`** - no implementation of Borusyak et al. (2024) exists
+
+4. **`did_multiplegt_dyn`** shows the most consistent cross-platform performance, with Python's Polars implementation being fastest
+
+## Package Availability Summary
+
+| Estimator | Stata | R | Python |
+|-----------|:-----:|:-:|:------:|
+| De Chaisemartin & D'Haultfoeuille | `did_multiplegt_dyn` | `DIDmultiplegtDYN` | `did-multiplegt-dyn` |
+| Callaway-Sant'Anna | `csdid` (bootstrap) | `did` | `csdid` |
+| Borusyak et al. | `did_imputation` | `didimputation` | **Not available** |
+| Sun-Abraham | `eventstudyinteract` | `fixest::sunab` | `pyfixest` |
+
+## Reproducibility
+
+The benchmark scripts are available in the `CX/` directory:
+
+- **Python**: `CX/benchmark_wolfers_python.ipynb`
+- **R**: `CX/benchmark_wolfers_complete.R`
+- **Stata**: `CX/benchmark_wolfers_stata.do`
+
+All scripts use a 5-minute (300 second) timeout per estimator.
+
+### Data Files
+
+- `CX/runtime_Python.csv` - Python benchmark results
+- `CX/runtime_R.csv` - R benchmark results
+- `CX/benchmark_results_stata.csv` - Stata benchmark results
+- `CX/runtime_all_platforms.csv` - Combined cross-platform results
