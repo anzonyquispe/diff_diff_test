@@ -1,0 +1,10 @@
+scenario,package,rows,time_seconds,status
+Original (1.7K),DIDmultiplegtDYN,1683,3.5322530269622803,completed
+Original (1.7K),did-CS,1683,1.2690551280975342,completed
+Original (1.7K),fixest-SA,1683,6.656035661697388,completed
+100x (168K),DIDmultiplegtDYN,168300,7.1605119705200195,completed
+100x (168K),did-CS,168300,3.604722738265991,completed
+100x (168K),fixest-SA,168300,8.054259061813354,completed
+1000x (1.68M),DIDmultiplegtDYN,1683000,295.90835189819336,completed
+1000x (1.68M),did-CS,1683000,100.70567917823792,completed
+1000x (1.68M),fixest-SA,1683000,300.0,timeout: Exceeded 300 seconds

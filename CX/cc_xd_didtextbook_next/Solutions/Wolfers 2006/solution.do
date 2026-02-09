@@ -1,0 +1,182 @@
+clear all
+cd "/Users/anzony.quisperojas/Documents/GitHub/diff_diff_test"
+capture use "_data/wolfers2006_didtextbook.dta", clear
+
+// if _rc==601{
+// use "C:\Users\134476\C DE CHAISEMARTIN Dropbox\clément de chaisemartin\A Mini course DID\Applications\Data sets\Wolfers 2006\wolfers2006_didtextbook.dta", clear
+// }
+
+*** 1) Static TWFE regression
+ 
+reg div_rate udl i.state i.year [w=stpop], vce(cluster state)
+
+*** 2) Decomposing the static TWFE regression
+ 
+*ssc install twowayfeweights
+*help twowayfeweights
+twowayfeweights div_rate state year udl, type(feTR) test_random_weights(exposurelength) weight(stpop)
+
+*** 3) Testing randomized treatment timing
+
+reg div_rate i.early_late_never if cohort!=1956&year<=1968 [w=stpop], vce(cluster state)
+
+*** 4) Event-study TWFE regression
+ 
+reg div_rate rel_time* i.state i.year [w=stpop], vce(cluster state)
+test rel_timeminus1 rel_timeminus2 rel_timeminus3 rel_timeminus4 rel_timeminus5 rel_timeminus6 rel_timeminus7 rel_timeminus8 rel_timeminus9
+
+*** 5) Decomposing the first estimated effect in the event-study TWFE regression
+
+twowayfeweights div_rate state year rel_time1, type(feTR) test_random_weights(year) weight(stpop) other_treatments(rel_time2-rel_time16) controls(rel_timeminus1-rel_timeminus9)
+
+*** 6) Sun and Abraham event-study estimators
+
+*ssc install eventstudyinteract, replace
+*help eventstudyinteract
+
+replace cohort=. if cohort==0
+replace rel_timeminus9=(year==cohort-1-9)
+gen rel_timeminus10=(year==cohort-1-10)
+gen rel_timeminus11=(year==cohort-1-11)
+gen rel_timeminus12=(year==cohort-1-12)
+gen rel_timeminus13=(year<=cohort-1-13)
+drop rel_time14 rel_time15 rel_time16
+replace rel_time13=(year>=cohort-1+13)
+eventstudyinteract div_rate rel_time* [aweight=stpop], ///
+	absorb(i.state i.year) cohort(cohort) control_cohort(controlgroup) ///
+	vce(cluster state)
+
+/*	
+/* Graph */ 
+matrix temp=r(table)'
+matrix res=J(27,4,0)
+matrix res[14,1]=0
+forvalues x = 1/13 {
+matrix res[14-`x',1]=-`x'
+matrix res[14-`x',2]=temp[`x'+13,1]
+matrix res[14-`x',3]=temp[`x'+13,5]
+matrix res[14-`x',4]=temp[`x'+13,6]
+}
+forvalues x = 1/13 {
+matrix res[14+`x',1]=`x'
+matrix res[14+`x',2]=temp[`x',1]
+matrix res[14+`x',3]=temp[`x',5]
+matrix res[14+`x',4]=temp[`x',6]
+}
+
+preserve
+drop _all
+svmat res
+twoway (scatter res2 res1, msize(medlarge) msymbol(o) mcolor(navy) legend(off)) ///
+	(line res2 res1, lcolor(navy)) (rcap res4 res3 res1, lcolor(maroon)), ///
+	 title("eventstudyinteract") xtitle("Relative time to year before law") ///
+	 ytitle("Effect") ylabel(-1(.5)0.5) yscale(range(-1.1 0.8)) xlabel(-13(2)13) name(g1)
+restore
+*/
+
+*** 7) Estimators of Callaway and Sant'Anna	
+
+*ssc install csdid, replace
+*help csdid
+replace cohort=0 if cohort==.
+// csdid div_rate [weight=stpop], ivar(state) time(year) gvar(cohort) agg(event)
+csdid div_rate [weight=stpop], ivar(state) time(year) gvar(cohort) notyet agg(event)  long2 
+* Generate 10 random clusters for 51 unique states
+set seed 12345
+
+preserve
+contract state
+gen random = runiform()
+sort random
+gen cluster = ceil(_n * 10 / 51)
+tempfile clusters
+save `clusters'
+restore
+
+merge m:1 state using `clusters', nogen
+drop random
+
+
+/*
+/* Graph */ 
+matrix temp=r(table)'
+matrix res=J(27,4,0)
+matrix res[14,1]=0
+forvalues x = 1/13 {
+matrix res[14-`x',1]=-`x'
+matrix res[14-`x',2]=temp[31-`x',1]
+matrix res[14-`x',3]=temp[31-`x',5]
+matrix res[14-`x',4]=temp[31-`x',6]
+}
+forvalues x = 1/13 {
+matrix res[14+`x',1]=`x'
+matrix res[14+`x',2]=temp[30+`x',1]
+matrix res[14+`x',3]=temp[30+`x',5]
+matrix res[14+`x',4]=temp[30+`x',6]
+}
+
+preserve
+drop _all
+svmat res
+twoway (scatter res2 res1, msize(medlarge) msymbol(o) mcolor(navy) legend(off)) ///
+	(line res2 res1, lcolor(navy)) (rcap res4 res3 res1, lcolor(maroon)), ///
+	 title("csdid") xtitle("Relative time to year before law") ///
+	 ytitle("Effect") ylabel(-1(.5)0.5) yscale(range(-1.1 0.8)) xlabel(-13(2)13) name(g2)
+restore
+*/
+
+*** 8) Estimators of de Chaisemartin and D'Haultfoeuille
+
+*ssc install did_multiplegt_dyn, replace
+*help did_imputation_dyn
+*customized graph:
+*did_multiplegt_dyn div_rate state year udl, effects(13) placebo(13) weight(stpop) graphoptions(title(did_multiplegt_dyn) xtitle(Relative time to year before law) ytitle(Effect) ylabel(-1(.5)0.5) yscale(range(-1.1 0.8)) xlabel(-13(2)13)  legend(off) name(g3))
+*default graph
+did_multiplegt_dyn div_rate state year udl, effects(13) placebo(13) weight(stpop)
+
+// Condition number
+matrix symeigen X v=didmgt_Var_Placebo
+di v[1,1]/v[1,13]
+
+// sup-t test
+*sotable, pnames(Placebo_1 Placebo_2 Placebo_3 Placebo_4 Placebo_5 Placebo_6 Placebo_7 Placebo_8 Placebo_9 Placebo_10 Placebo_11 Placebo_12 Placebo_13) normal
+
+	 
+*** 9) Estimators of Borusyak et. al.
+
+*ssc install did_imputation, replace
+*help did_imputation
+replace cohort=. if cohort==0
+did_imputation div_rate state year cohort [aweight=stpop], horizons(0/12) autosample minn(0) pre(13)
+
+/*
+/* Graph */ 
+matrix temp=r(table)'
+matrix res=J(27,4,0)
+matrix res[14,1]=0
+forvalues x = 1/13 {
+matrix res[14-`x',1]=-`x'
+matrix res[14-`x',2]=temp[`x'+13,1]
+matrix res[14-`x',3]=temp[`x'+13,5]
+matrix res[14-`x',4]=temp[`x'+13,6]
+}
+forvalues x = 1/13 {
+matrix res[14+`x',1]=`x'
+matrix res[14+`x',2]=temp[`x',1]
+matrix res[14+`x',3]=temp[`x',5]
+matrix res[14+`x',4]=temp[`x',6]
+}
+
+preserve
+drop _all
+svmat res
+twoway (scatter res2 res1, msize(medlarge) msymbol(o) mcolor(navy) legend(off)) ///
+	(line res2 res1, lcolor(navy)) (rcap res4 res3 res1, lcolor(maroon)), ///
+	 title("did_imputation") xtitle("Relative time to year before law") ///
+	 ytitle("Effect") ylabel(-1(.5)0.5) yscale(range(-1.1 0.8)) xlabel(-13(2)13) name(g4)
+restore
+
+graph combine g1 g2 g3 g4
+graph export "C:\Users\134476\C DE CHAISEMARTIN Dropbox\clément de chaisemartin\A Mini course DID\Textbook\figures\graphs.pdf", replace
+*/
+

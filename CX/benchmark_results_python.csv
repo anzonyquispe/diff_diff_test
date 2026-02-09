@@ -1,0 +1,11 @@
+scenario,package,rows,time_seconds,status
+Original (1.7K),pyfixest-EventStudy,1683,9.895946979522705,completed
+Original (1.7K),differences-CS,1683,0.9808382987976074,completed
+Original (1.7K),did-multiplegt-dyn,1683,3.1700661182403564,completed
+100x (168K),pyfixest-EventStudy,168300,2.7846479415893555,completed
+100x (168K),differences-CS,168300,3.648164987564087,completed
+100x (168K),did-multiplegt-dyn,168300,5.935415029525757,completed
+1000x (1.68M),pyfixest-EventStudy,1683000,42.41447710990906,completed
+1000x (1.68M),did-multiplegt-dyn,1683000,174.51180720329285,completed
+1000x (1.68M),differences-CS,1683000,50.49870705604553,completed
+1000x (1.68M),differences-CS,1683000,47.92340922355652,completed

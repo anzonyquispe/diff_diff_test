@@ -1,0 +1,22 @@
+scenario,package,rows,time_seconds,status,platform,package_std
+Original (1.7K),DIDmultiplegtDYN,1683,3.5322530269622803,completed,Python,did_multiplegt_dyn
+Original (1.7K),did-CS,1683,1.2690551280975342,completed,Python,csdid (CS)
+Original (1.7K),fixest-SA,1683,6.656035661697388,completed,Python,Sun-Abraham
+100x (168K),DIDmultiplegtDYN,168300,7.1605119705200195,completed,Python,did_multiplegt_dyn
+100x (168K),did-CS,168300,3.604722738265991,completed,Python,csdid (CS)
+100x (168K),fixest-SA,168300,8.054259061813354,completed,Python,Sun-Abraham
+1000x (1.68M),DIDmultiplegtDYN,1683000,295.90835189819336,completed,Python,did_multiplegt_dyn
+1000x (1.68M),did-CS,1683000,100.70567917823792,completed,Python,csdid (CS)
+1000x (1.68M),fixest-SA,1683000,300.0,timeout: Exceeded 300 seconds,Python,Sun-Abraham
+Original (1.7K),DIDmultiplegtDYN,1683,3.83122396469116,completed,R,did_multiplegt_dyn
+Original (1.7K),did-CS,1683,0.910514116287231,completed,R,csdid (CS)
+Original (1.7K),didimputation,1683,0.0575640201568604,completed,R,did_imputation (BJS)
+Original (1.7K),fixest-SA,1683,0.128536939620972,completed,R,Sun-Abraham
+100x (168K),DIDmultiplegtDYN,168300,9.71142888069153,completed,R,did_multiplegt_dyn
+100x (168K),did-CS,168300,1.60572409629822,completed,R,csdid (CS)
+100x (168K),didimputation,168300,13.0330519676208,completed,R,did_imputation (BJS)
+100x (168K),fixest-SA,168300,7.80491495132446,completed,R,Sun-Abraham
+1000x (1.68M),DIDmultiplegtDYN,1683000,42.8445730209351,completed,R,did_multiplegt_dyn
+1000x (1.68M),did-CS,1683000,9.03677797317505,completed,R,csdid (CS)
+1000x (1.68M),didimputation,1683000,44680.2055230141,completed,R,did_imputation (BJS)
+1000x (1.68M),fixest-SA,1683000,81.2526640892029,completed,R,Sun-Abraham

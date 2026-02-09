@@ -1,0 +1,98 @@
+====================================================================== 
+COMPREHENSIVE BENCHMARK: DID Estimators Comparison
+====================================================================== 
+Date: 2026-02-08 19:40:14.876861 
+Packages: DIDmultiplegtDYN, did (CS), didimputation, fixest (SA)
+Timeout: 5 minutes (300 seconds)
+
+Loading data...
+Original data rows: 1683 
+Unique states: 51 
+Year range: 1956 - 1988 
+Treatment groups (first_treat):  
+
+
+ ====================================================================== 
+SCENARIO 1: Original Data ( 1683  rows)
+====================================================================== 
+
+1. Running DIDmultiplegtDYN...
+   Time: 3.83 seconds 
+2. Running did (Callaway-Sant'Anna)...
+   Time: 0.91 seconds 
+3. Running didimputation...
+   Time: 0.06 seconds 
+4. Running fixest (Sun-Abraham)...
+   Time: 0.13 seconds 
+
+ ====================================================================== 
+SCENARIO 2: Synthetic Data 100x
+====================================================================== 
+
+Created synthetic data with 168300 observations
+Unique states: 5100 
+Synthetic data rows: 168300 
+
+1. Running DIDmultiplegtDYN...
+   Time: 9.71 seconds 
+2. Running did (Callaway-Sant'Anna)...
+   Time: 1.61 seconds 
+3. Running didimputation...
+   Time: 13.03 seconds 
+4. Running fixest (Sun-Abraham)...
+   Time: 7.8 seconds 
+           used  (Mb) gc trigger   (Mb) limit (Mb)  max used   (Mb)
+Ncells  3887788 207.7   10873792  580.8         NA  11706400  625.2
+Vcells 57162189 436.2  277509366 2117.3      36864 433608383 3308.2
+
+ ====================================================================== 
+SCENARIO 3: Synthetic Data 1000x
+====================================================================== 
+
+Created synthetic data with 1683000 observations
+Unique states: 51000 
+Synthetic data rows: 1683000 
+
+1. Running DIDmultiplegtDYN...
+   Time: 42.84 seconds 
+2. Running did (Callaway-Sant'Anna)...
+   Time: 9.04 seconds 
+3. Running didimputation...
+Processed 37453 groups out of 49000. 76% done. Time elapsed: 3s. ETA: 0s.Processed 49000 groups out of 49000. 100% done. Time elapsed: 3s. ETA: 0s.
+   Time: 44680.21 seconds 
+4. Running fixest (Sun-Abraham)...
+   Time: 81.25 seconds 
+            used   (Mb) gc trigger    (Mb) limit (Mb)   max used    (Mb)
+Ncells   3943718  210.7   10873792   580.8         NA   11706400   625.2
+Vcells 546262957 4167.7 2992370431 22830.0      36864 4675578797 35671.9
+
+ ====================================================================== 
+SUMMARY OF RESULTS
+====================================================================== 
+
+          scenario          package    rows time_seconds    status
+1  Original (1.7K) DIDmultiplegtDYN    1683 3.831224e+00 completed
+2  Original (1.7K)           did-CS    1683 9.105141e-01 completed
+3  Original (1.7K)    didimputation    1683 5.756402e-02 completed
+4  Original (1.7K)        fixest-SA    1683 1.285369e-01 completed
+5      100x (168K) DIDmultiplegtDYN  168300 9.711429e+00 completed
+6      100x (168K)           did-CS  168300 1.605724e+00 completed
+7      100x (168K)    didimputation  168300 1.303305e+01 completed
+8      100x (168K)        fixest-SA  168300 7.804915e+00 completed
+9    1000x (1.68M) DIDmultiplegtDYN 1683000 4.284457e+01 completed
+10   1000x (1.68M)           did-CS 1683000 9.036778e+00 completed
+11   1000x (1.68M)    didimputation 1683000 4.468021e+04 completed
+12   1000x (1.68M)        fixest-SA 1683000 8.125266e+01 completed
+
+
+PIVOT TABLE (Time in seconds):
+====================================================================== 
+
+           package Original (1.7K) 100x (168K) 1000x (1.68M)
+1 DIDmultiplegtDYN      3.83122396    9.711429     42.844573
+2           did-CS      0.91051412    1.605724      9.036778
+3    didimputation      0.05756402   13.033052  44680.205523
+4        fixest-SA      0.12853694    7.804915     81.252664
+
+
+Benchmark completed at: 2026-02-09 08:07:46.704888 
