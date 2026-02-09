@@ -117,8 +117,56 @@ This repository contains comparative analysis and benchmarking of difference-in-
 | de Chaisemartin & D'Haultfoeuille | `did_multiplegt_dyn div_rate state year udl, effects(13) placebo(13) weight(stpop)` |
 | Borusyak et al. | `did_imputation div_rate state year cohort [aweight=stpop], horizons(0/12) autosample minn(0) pre(13)` |
 
+### Session: 2026-02-09
+- **Goal**: Publish Wolfers benchmark results online via GitHub Pages
+
+#### Actions Completed:
+
+1. **Created new Quarto chapter**: `wolfers_benchmark.qmd`
+   - Cross-platform benchmark comparison (Stata vs R vs Python)
+   - Runtime tables for all 4 estimators across 3 dataset sizes
+   - Key findings on scaling performance
+   - Package availability summary
+
+2. **Updated `_quarto.yml`**:
+   - Added `wolfers_benchmark.qmd` to book chapters list
+
+3. **Rendered full Quarto book**:
+   - All 7 chapters rendered successfully
+   - Output in `_book/` folder
+
+4. **Created GitHub Actions workflow**: `.github/workflows/publish.yml`
+   - Automatic deployment to GitHub Pages on push to main/main_test
+   - Deploys pre-built `_book/` folder directly (no re-rendering)
+
+5. **Commits made**:
+   - `11479cb` - Add Wolfers benchmark chapter and GitHub Pages deployment
+   - `11e20f1` - Fix GitHub Pages workflow: deploy pre-built _book directly
+
+#### New Files Created:
+- `wolfers_benchmark.qmd` - Wolfers benchmark chapter
+- `.github/workflows/publish.yml` - GitHub Pages deployment workflow
+- `_book/wolfers_benchmark.html` - Rendered HTML chapter
+
+#### GitHub Pages Setup Instructions:
+1. Go to: https://github.com/anzonyquispe/diff_diff_test/settings/pages
+2. Under "Build and deployment" → Source: Select **GitHub Actions**
+3. Site will be live at: `https://anzonyquispe.github.io/diff_diff_test/`
+4. Wolfers chapter at: `https://anzonyquispe.github.io/diff_diff_test/wolfers_benchmark.html`
+
+#### Runtime Summary (1.68M observations):
+
+| Estimator | Stata | R | Python |
+|-----------|------:|--:|-------:|
+| did_multiplegt_dyn | 543.3s | 42.8s | **36.7s** |
+| Callaway-Sant'Anna | 2,253.4s | **9.0s** | 40.6s |
+| Sun-Abraham | 507.7s | 81.3s | **52.5s** |
+| did_imputation | **241.7s** | 44,680.2s | N/A |
+
+**Key finding**: Python's Polars-based `did_multiplegt_dyn` scales best.
+
 ---
 
 ## Notes
-- Current branch: `main_test`
+- Current branch: `main`
 - Main branch for PRs: `main`
