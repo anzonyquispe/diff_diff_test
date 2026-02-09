@@ -1,0 +1,2492 @@
+------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/benchmark_wolfers_stata.log
+  log type:  text
+ opened on:   9 Feb 2026, 09:13:46
+
+. 
+. ********************************************************************************
+. * INSTALL REQUIRED PACKAGES (if not already installed)
+. ********************************************************************************
+. display _n "Checking/installing required packages..."
+
+Checking/installing required packages...
+
+. 
+. foreach pkg in did_multiplegt_dyn csdid did_imputation eventstudyinteract reghdfe ftools {
+  2.     capture which `pkg'
+  3.     if _rc != 0 {
+  4.         display "Installing `pkg'..."
+  5.         ssc install `pkg', replace
+  6.     }
+  7.     else {
+  8.         display "`pkg' - OK"
+  9.     }
+ 10. }
+did_multiplegt_dyn - OK
+csdid - OK
+did_imputation - OK
+eventstudyinteract - OK
+reghdfe - OK
+ftools - OK
+
+. 
+. * ftools is required for reghdfe
+. capture which ftools
+
+. if _rc != 0 {
+.     ssc install ftools, replace
+. }
+
+. ftools, compile
+(compiling lftools.mlib for Stata 19.5)
+(library saved in /Users/anzony.quisperojas/Library/Application Support/Stata/ado/plus/l/lftools.mlib)
+
+. 
+. ********************************************************************************
+. * SETUP: Create results storage
+. ********************************************************************************
+. display _n "========================================================================"
+
+========================================================================
+
+. display "COMPREHENSIVE BENCHMARK: DID Estimators Comparison (Stata)"
+COMPREHENSIVE BENCHMARK: DID Estimators Comparison (Stata)
+
+. display "========================================================================"
+========================================================================
+
+. display "Date: $S_DATE $S_TIME"
+Date:  9 Feb 2026 09:13:46
+
+. display "Packages: did_multiplegt_dyn, csdid, did_imputation, eventstudyinteract, reghdfe"
+Packages: did_multiplegt_dyn, csdid, did_imputation, eventstudyinteract, reghdfe
+
+. display ""
+
+
+. 
+. * Temp file for results
+. global results_file "$save_path/temp_benchmark_results.dta"
+
+. 
+. * Create empty results dataset
+. clear
+
+. gen str20 scenario = ""
+
+. gen str30 package = ""
+
+. gen long rows = .
+
+. gen double time_seconds = .
+
+. gen str20 status = ""
+
+. gen double coefficient = .
+
+. gen double std_error = .
+
+. save "$results_file", replace
+(dataset contains 0 observations)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+
+. 
+. ********************************************************************************
+. * HELPER PROGRAM: Store benchmark result
+. ********************************************************************************
+. capture program drop store_result
+
+. program define store_result
+  1.     syntax, scenario(string) package(string) rows(integer) time(real) status(string) ///
+>            [coef(real 0) se(real 0)]
+  2. 
+.     preserve
+  3.     use "$results_file", clear
+  4.     local N = _N + 1
+  5.     set obs `N'
+  6.     replace scenario = "`scenario'" in `N'
+  7.     replace package = "`package'" in `N'
+  8.     replace rows = `rows' in `N'
+  9.     replace time_seconds = `time' in `N'
+ 10.     replace status = "`status'" in `N'
+ 11.     if `coef' != 0 {
+ 12.         replace coefficient = `coef' in `N'
+ 13.     }
+ 14.     if `se' != 0 {
+ 15.         replace std_error = `se' in `N'
+ 16.     }
+ 17.     save "$results_file", replace
+ 18.     restore
+ 19. end
+
+. 
+. ********************************************************************************
+. * HELPER PROGRAM: Create synthetic data by duplicating groups
+. * Each replication gets unique state IDs: state + (replication-1) * max_state
+. ********************************************************************************
+. capture program drop create_synthetic_data
+
+. program define create_synthetic_data
+  1.     syntax, multiplier(integer)
+  2. 
+.     if `multiplier' == 1 {
+  3.         exit
+  4.     }
+  5. 
+.     * Get max state value from original data
+.     quietly summarize state
+  6.     local max_state = r(max)
+  7. 
+.     * Save original data
+.     tempfile original
+  8.     save `original'
+  9. 
+.     * Start with empty dataset, then append each replication with offset IDs
+.     clear
+ 10. 
+.     forvalues i = 1/`multiplier' {
+ 11.         * Load fresh copy of original
+.         preserve
+ 12.         use `original', clear
+ 13. 
+.         * Calculate offset for this replication
+.         local offset = (`i' - 1) * `max_state'
+ 14. 
+.         * Apply offset to state ID (creates unique state for each replication)
+.         quietly replace state = state + `offset'
+ 15. 
+.         * Save this replication
+.         tempfile rep`i'
+ 16.         save `rep`i''
+ 17.         restore
+ 18. 
+.         * Append to main dataset
+.         append using `rep`i''
+ 19.     }
+ 20. 
+.     * Verify unique state-year combinations
+.     quietly duplicates report state year
+ 21.     display "Created synthetic data with " _N " observations"
+ 22.     display "Unique states: "
+ 23.     quietly distinct state
+ 24.     display r(ndistinct)
+ 25. end
+
+. 
+. ********************************************************************************
+. * LOAD AND PREPARE DATA
+. ********************************************************************************
+. display _n "Loading data..."
+
+Loading data...
+
+. use "$data_path/wolfers2006_didtextbook.dta", clear
+(Divorce data from Wolfers (2006) AER)
+
+. 
+. local orig_N = _N
+
+. display "Original data rows: `orig_N'"
+Original data rows: 1683
+
+. display "Variables: "
+Variables: 
+
+. describe, short
+
+Contains data from /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/_data/wolfers2006_didtextbook.dta
+ Observations:         1,683                  Divorce data from Wolfers (2006) AER
+    Variables:            35                  7 Jun 2024 13:31
+Sorted by: state
+
+. 
+. * Create first_treat variable for CS/SA estimators
+. * first_treat = first year when udl == 1, or 0 for never-treated
+. bysort state (year): gen first_udl = year if udl == 1
+(1,153 missing values generated)
+
+. bysort state: egen first_treat = min(first_udl)
+(660 missing values generated)
+
+. replace first_treat = 0 if missing(first_treat)
+(660 real changes made)
+
+. gen first_treat_imp = first_treat
+
+. replace first_treat_imp = . if first_treat ==0
+(660 real changes made, 660 to missing)
+
+. drop first_udl
+
+. 
+. * Create relative time variable
+. gen rel_time = year - first_treat if first_treat > 0
+(660 missing values generated)
+
+. replace rel_time = -1000 if first_treat == 0
+(660 real changes made)
+
+. 
+. * Summary statistics
+. display _n "Data summary:"
+
+Data summary:
+
+. display "  Unique states: "
+  Unique states: 
+
+. quietly distinct state
+
+. display r(ndistinct)
+51
+
+. summarize year, meanonly
+
+. display "  Year range: " r(min) " - " r(max)
+  Year range: 1956 - 1988
+
+. tab first_treat, missing
+
+first_treat |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        660       39.22       39.22
+       1956 |         66        3.92       43.14
+       1969 |         33        1.96       45.10
+       1970 |         66        3.92       49.02
+       1971 |        198       11.76       60.78
+       1972 |         99        5.88       66.67
+       1973 |        330       19.61       86.27
+       1974 |         66        3.92       90.20
+       1975 |         66        3.92       94.12
+       1976 |         33        1.96       96.08
+       1977 |         33        1.96       98.04
+       1985 |         33        1.96      100.00
+------------+-----------------------------------
+      Total |      1,683      100.00
+
+. 
+. 
+. replace rel_timeminus9=(year==cohort-1-9)
+(863 real changes made)
+
+. gen rel_timeminus10=(year==cohort-1-10)
+
+. gen rel_timeminus11=(year==cohort-1-11)
+
+. gen rel_timeminus12=(year==cohort-1-12)
+
+. gen rel_timeminus13=(year<=cohort-1-13)
+
+. drop rel_time14 rel_time15 rel_time16
+
+. replace rel_time13=(year>=cohort-1+13)
+(800 real changes made)
+
+. drop rel_time
+
+. 
+. 
+. ********************************************************************************
+. * SCENARIO 1: Original Data (~1,683 rows)
+. ********************************************************************************
+. display _n "========================================================================"
+
+========================================================================
+
+. display "SCENARIO 1: Original Data (`orig_N' rows)"
+SCENARIO 1: Original Data (1683 rows)
+
+. display "========================================================================"
+========================================================================
+
+. 
+. local scenario "Original (1.7K)"
+
+. local n_rows = `orig_N'
+
+. 
+. * -------------------------------------------------------------------------
+. * 1. did_multiplegt_dyn (De Chaisemartin & D'Haultfoeuille)
+. * -------------------------------------------------------------------------
+. display _n "1. Running did_multiplegt_dyn..."
+
+1. Running did_multiplegt_dyn...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily did_multiplegt_dyn div_rate state year udl, ///
+>     effects(13) placebo(13) weight(stpop) graph_off
+
+
+--------------------------------------------------------------------------------
+             Estimation of treatment effects: Event-study effects
+--------------------------------------------------------------------------------
+
+             |  Estimate         SE      LB CI      UB CI          N  Switchers 
+-------------+-----------------------------------------------------------------
+    Effect_1 |  .3009669   .0875908   .1292921   .4726416        320         27 
+    Effect_2 |  .3035895    .072761   .1609806   .4461984        294         27 
+    Effect_3 |  .2683828   .0758296   .1197596   .4170061        271         27 
+    Effect_4 |  .1816435   .0848985   .0152454   .3480415        255         27 
+    Effect_5 |  .1192688   .1007013  -.0781021   .3166398        220         26 
+    Effect_6 |  .1148243   .1107215  -.1021858   .3318343        215         26 
+    Effect_7 |  .1225242   .1306844  -.1336126    .378661        212         26 
+    Effect_8 |  .0653645   .1164027  -.1627805   .2935095        209         26 
+    Effect_9 | -.0758406   .1196254   -.310302   .1586208        206         26 
+   Effect_10 | -.2138813   .1334247   -.475389   .0476264        205         26 
+   Effect_11 | -.2581056   .1376535  -.5279015   .0116903        205         26 
+   Effect_12 | -.4385846   .1438404  -.7205066  -.1566625        203         26 
+   Effect_13 | -.5012722   .1654563  -.8255606  -.1769838        181         25 
+--------------------------------------------------------------------------------
+Test of joint nullity of the effects : p-value = 6.737e-12
+
+
+--------------------------------------------------------------------------------
+               Average cumulative (total) effect per treatment unit
+--------------------------------------------------------------------------------
+
+             |  Estimate         SE      LB CI      UB CI          N     Switch  x Periods 
+-------------+----------------------------------------------------------------------------
+  Av_tot_eff | -.0151066   .0987446  -.2086425   .1784293        837        341            
+--------------------------------------------------------------------------------
+Average number of time periods over which a treatment's effect is accumulated = 6.9296187
+
+
+--------------------------------------------------------------------------------
+          Testing the parallel trends and no anticipation assumptions
+--------------------------------------------------------------------------------
+
+             |  Estimate         SE      LB CI      UB CI          N  Switchers 
+-------------+-----------------------------------------------------------------
+   Placebo_1 |  .0468044   .0493928  -.0500037   .1436124        319         27 
+   Placebo_2 |  .0578159   .0600959  -.0599699   .1756017        293         27 
+   Placebo_3 |  .0978812   .0763021  -.0516681   .2474305        270         27 
+   Placebo_4 |    .05223    .083889  -.1121895   .2166495        254         27 
+   Placebo_5 |   .056755   .0989039  -.1370931    .250603        219         26 
+   Placebo_6 |  .0062875   .1000968  -.1898987   .2024737        213         26 
+   Placebo_7 |  .0181658   .1033329  -.1843629   .2206946        209         26 
+   Placebo_8 |   .073694   .1259978  -.1732571   .3206451        207         26 
+   Placebo_9 |  .0983373   .1380443  -.1722246   .3688992        205         26 
+  Placebo_10 |  .0420555   .1527371  -.2573037   .3414146        204         26 
+  Placebo_11 | -.0121509   .1326597  -.2721591   .2478573        199         26 
+  Placebo_12 | -.0578349   .1422549  -.3366494   .2209797        194         26 
+  Placebo_13 |  .0256646   .1832985  -.3335939   .3849232        151         23 
+--------------------------------------------------------------------------------
+Test of joint nullity of the placebos : p-value = 1.226e-06
+
+
+The development of this package was funded by the European Union (ERC, REALLYCREDIBLE,GA N°101043899).
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     local coef = e(Effect_1)
+.     local se = e(se_effect_1)
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time:   2.81s - SUCCESS
+.     display "   Effect_1: " %8.4f `coef'
+   Effect_1:   0.3010
+.     store_result, scenario("`scenario'") package("did_multiplegt_dyn") ///
+>         rows(`n_rows') time(`elapsed') status("completed") coef(`coef') se(`se')
+Number of observations (_N) was 0, now 1.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("did_multiplegt_dyn") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. * -------------------------------------------------------------------------
+. * 2. csdid (Callaway & Sant'Anna)
+. * NOTE: csdid uses bootstrap for inference - runtime will be slower than
+. *       analytical SE estimators
+. * -------------------------------------------------------------------------
+. display _n "2. Running csdid (Callaway-Sant'Anna) [uses bootstrap]..."
+
+2. Running csdid (Callaway-Sant'Anna) [uses bootstrap]...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily csdid div_rate [weight=stpop], ivar(state) time(year) gvar(cohort) notyet agg(event) long2
+(importance weights assumed)
+(importance weights assumed)
+Units always treated found. These will be ignored
+Panel is not balanced
+Will use observations with Pair balanced (observed at t0 and t1)
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+....................
+Difference-in-difference with Multiple Time Periods
+
+                                                         Number of obs = 1,541
+Outcome model  : regression adjustment
+Treatment model: none
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     Pre_avg |   .1488409   .1019622     1.46   0.144    -.0510013    .3486831
+    Post_avg |  -.1824326   .1216863    -1.50   0.134    -.4209334    .0560683
+        Tm29 |    .349136    .133197     2.62   0.009     .0880747    .6101972
+        Tm28 |    .060651   .1209939     0.50   0.616    -.1764927    .2977947
+        Tm27 |   .2753951   .1397118     1.97   0.049      .001565    .5492252
+        Tm26 |    .291737   .1545472     1.89   0.059    -.0111698    .5946439
+        Tm25 |   .4097278    .164682     2.49   0.013      .086957    .7324986
+        Tm24 |   .3669451   .1831306     2.00   0.045     .0080157    .7258746
+        Tm23 |   .4348086   .1452077     2.99   0.003     .1502068    .7194104
+        Tm22 |   .4740632   .1528619     3.10   0.002     .1744592    .7736671
+        Tm21 |  -.0345666   .5376564    -0.06   0.949    -1.088354    1.019221
+        Tm20 |   .2726257   .3484129     0.78   0.434     -.410251    .9555024
+        Tm19 |   .1498854    .267195     0.56   0.575    -.3738072    .6735781
+        Tm18 |   .3823713   .1559596     2.45   0.014     .0766961    .6880466
+        Tm17 |   .1302385   .2602657     0.50   0.617    -.3798729    .6403499
+        Tm16 |   .1642284   .1653923     0.99   0.321    -.1599345    .4883913
+        Tm15 |   .0796705   .1526273     0.52   0.602    -.2194735    .3788146
+        Tm14 |  -.0633189   .1036736    -0.61   0.541    -.2665154    .1398777
+        Tm13 |   -.072039   .1011364    -0.71   0.476    -.2702626    .1261847
+        Tm12 |  -.0057236    .119198    -0.05   0.962    -.2393475    .2279002
+        Tm11 |   .0558966   .1360673     0.41   0.681    -.2107904    .3225835
+        Tm10 |   .1111951   .1311907     0.85   0.397     -.145934    .3683242
+         Tm9 |    .050821   .1160939     0.44   0.662    -.1767189    .2783609
+         Tm8 |   .0037088   .0896705     0.04   0.967    -.1720422    .1794597
+         Tm7 |  -.0052916   .1050818    -0.05   0.960    -.2112481    .2006648
+         Tm6 |    .037777   .0986588     0.38   0.702    -.1555907    .2311447
+         Tm5 |   .0565202   .0963351     0.59   0.557    -.1322931    .2453335
+         Tm4 |   .0965951   .0644069     1.50   0.134    -.0296402    .2228304
+         Tm3 |   .0537248   .0542805     0.99   0.322    -.0526631    .1601127
+         Tm2 |   .0407616   .0536605     0.76   0.447    -.0644109    .1459342
+         Tp0 |   .3087354    .221752     1.39   0.164    -.1258905    .7433614
+         Tp1 |   .3055011   .0954695     3.20   0.001     .1183843    .4926178
+         Tp2 |   .2699117   .0780257     3.46   0.001     .1169841    .4228392
+         Tp3 |   .1811521   .0949103     1.91   0.056    -.0048687    .3671728
+         Tp4 |   .1230162   .1027365     1.20   0.231    -.0783437    .3243761
+         Tp5 |   .1226264   .1124918     1.09   0.276    -.0978535    .3431063
+         Tp6 |   .1342118   .1295187     1.04   0.300    -.1196402    .3880637
+         Tp7 |   .0736374   .1305273     0.56   0.573    -.1821914    .3294661
+         Tp8 |  -.0644318   .1275715    -0.51   0.614    -.3144674    .1856038
+         Tp9 |  -.1948393    .135196    -1.44   0.150    -.4598187      .07014
+        Tp10 |  -.2381772   .1607797    -1.48   0.139    -.5532995    .0769452
+        Tp11 |  -.4121967   .1685973    -2.44   0.014    -.7426412   -.0817522
+        Tp12 |    -.46958   .1733054    -2.71   0.007    -.8092524   -.1299076
+        Tp13 |  -.5008331   .1999601    -2.50   0.012    -.8927477   -.1089186
+        Tp14 |  -.3881211   .1755648    -2.21   0.027    -.7322218   -.0440204
+        Tp15 |  -.5157258   .2282866    -2.26   0.024    -.9631593   -.0682923
+        Tp16 |  -.4975937   .2557189    -1.95   0.052    -.9987936    .0036061
+        Tp17 |  -.7279426   .2639163    -2.76   0.006    -1.245209   -.2106761
+        Tp18 |  -1.090278   .2702964    -4.03   0.000    -1.620049   -.5605066
+        Tp19 |  -.0677238   .2029206    -0.33   0.739    -.4654408    .3299932
+------------------------------------------------------------------------------
+Control: Not yet Treated
+
+See Callaway and Sant'Anna (2021) for details
+
+. 
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     * Get ATT estimate
+.     capture matrix b = e(b)
+.     if _rc == 0 {
+.         local coef = b[1,1]
+.     }
+.     else {
+.         local coef = .
+.     }
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time:   4.89s - SUCCESS
+.     store_result, scenario("`scenario'") package("csdid-CS") ///
+>         rows(`n_rows') time(`elapsed') status("completed") coef(`coef')
+Number of observations (_N) was 1, now 2.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("csdid-CS") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. * -------------------------------------------------------------------------
+. * 3. did_imputation (Borusyak, Jaravel & Spiess)
+. * -------------------------------------------------------------------------
+. display _n "3. Running did_imputation (Borusyak-Jaravel-Spiess)..."
+
+3. Running did_imputation (Borusyak-Jaravel-Spiess)...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. local scenario "Original (1.7K)"
+
+. local n_rows = `orig_N'
+
+. 
+. 
+. capture noisily did_imputation div_rate state year first_treat_imp [aw=stpop], horizons(0/12) autosample minn(0) pre(13)
+Warning: part of the sample was dropped for the following coefficients because FE could not be imputed: tau0 tau1 tau2 tau3 tau4 tau5 tau6
+>  tau7 tau8 tau9 tau10 tau11 tau12.
+
+                                                         Number of obs = 1,471
+------------------------------------------------------------------------------
+    div_rate | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        tau0 |   .2649129   .1022424     2.59   0.010     .0645214    .4653044
+        tau1 |   .3228116   .1076348     3.00   0.003     .1118512    .5337719
+        tau2 |   .2508727   .1205181     2.08   0.037     .0146616    .4870837
+        tau3 |   .1689476   .1318791     1.28   0.200    -.0895307    .4274259
+        tau4 |   .1251728   .1440538     0.87   0.385    -.1571675     .407513
+        tau5 |   .1701519   .1584173     1.07   0.283    -.1403404    .4806441
+        tau6 |    .172082   .1682175     1.02   0.306    -.1576183    .5017823
+        tau7 |   .1102601   .1595317     0.69   0.489    -.2024163    .4229365
+        tau8 |  -.0933057   .1551532    -0.60   0.548    -.3974003    .2107889
+        tau9 |  -.2215382   .1691255    -1.31   0.190     -.553018    .1099417
+       tau10 |  -.2458125   .1749998    -1.40   0.160    -.5888057    .0971807
+       tau11 |  -.4276674   .1756598    -2.43   0.015    -.7719544   -.0833805
+       tau12 |  -.4521017   .1956893    -2.31   0.021    -.8356457   -.0685577
+        pre1 |  -.0063006   .1702816    -0.04   0.970    -.3400465    .3274453
+        pre2 |   .0311516   .1776057     0.18   0.861     -.316949    .3792523
+        pre3 |   .0404018   .1681154     0.24   0.810    -.2890983     .369902
+        pre4 |   .0996774   .1584351     0.63   0.529    -.2108496    .4102044
+        pre5 |   .0819758   .1897735     0.43   0.666    -.2899733     .453925
+        pre6 |   .0054861   .1347439     0.04   0.968    -.2586071    .2695793
+        pre7 |  -.0011134   .1298767    -0.01   0.993    -.2556671    .2534403
+        pre8 |   .0361219   .1391493     0.26   0.795    -.2366056    .3088494
+        pre9 |   .0540569   .1105788     0.49   0.625    -.1626735    .2707873
+       pre10 |    .101609   .1267643     0.80   0.423    -.1468445    .3500626
+       pre11 |   .0641364   .1279744     0.50   0.616    -.1866887    .3149615
+       pre12 |   .0019235   .1080525     0.02   0.986    -.2098555    .2137024
+       pre13 |  -.0784114   .0749313    -1.05   0.295    -.2252742    .0684513
+------------------------------------------------------------------------------
+
+. 
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     * Get coefficient from first horizon
+.     capture matrix b = e(b)
+.     if _rc == 0 {
+.         local coef = b[1,1]
+.     }
+.     else {
+.         local coef = .
+.     }
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time:   0.75s - SUCCESS
+.     store_result, scenario("`scenario'") package("did_imputation-BJS") ///
+>         rows(`n_rows') time(`elapsed') status("completed") coef(`coef')
+Number of observations (_N) was 2, now 3.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("did_imputation-BJS") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. * -------------------------------------------------------------------------
+. * 4. eventstudyinteract (Sun & Abraham)
+. * -------------------------------------------------------------------------
+. display _n "4. Running eventstudyinteract (Sun-Abraham)..."
+
+4. Running eventstudyinteract (Sun-Abraham)...
+
+. local scenario "Original (1.7K)"
+
+. local n_rows = _N
+
+. 
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily eventstudyinteract div_rate rel_time* [aweight=stpop], absorb(i.state i.year) cohort(first_treat) control_cohort(control
+> group) vce(cluster state)
+(sum of wgt is 3,493,823,905)
+(obs=1,004)
+
+IW estimates for dynamic effects                        Number of obs =  1,631
+Absorbing 2 HDFE groups                                 F(259, 50)    =      .
+                                                        Prob > F      =      .
+                                                        R-squared     = 0.9413
+                                                        Adj R-squared = 0.9258
+                                                        Root MSE      = 0.5276
+                                    (Std. err. adjusted for 51 clusters in state)
+---------------------------------------------------------------------------------
+                |               Robust
+       div_rate | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+      rel_time1 |   .2897949   .1997903     1.45   0.153    -.1114958    .6910855
+      rel_time2 |   .2964111   .0891546     3.32   0.002     .1173388    .4754835
+      rel_time3 |   .2600839   .0860893     3.02   0.004     .0871685    .4329994
+      rel_time4 |   .1663565   .1066989     1.56   0.125    -.0479545    .3806675
+      rel_time5 |   .1296995   .1108945     1.17   0.248    -.0930387    .3524377
+      rel_time6 |   .1912945   .1241429     1.54   0.130    -.0580538    .4406427
+      rel_time7 |   .1984976   .1466441     1.35   0.182    -.0960458     .493041
+      rel_time8 |   .1151081   .1393104     0.83   0.413    -.1647049    .3949212
+      rel_time9 |  -.0647595   .1354548    -0.48   0.635    -.3368285    .2073094
+     rel_time10 |  -.1862509   .1537858    -1.21   0.232    -.4951387     .122637
+     rel_time11 |  -.2257223     .17088    -1.32   0.193    -.5689448    .1175002
+     rel_time12 |  -.4094981   .1797353    -2.28   0.027    -.7705071   -.0484892
+     rel_time13 |   -.392231    .187765    -2.09   0.042     -.769368    -.015094
+ rel_timeminus1 |   .0614356   .0536357     1.15   0.257    -.0462949    .1691662
+ rel_timeminus2 |   .0584319   .0720099     0.81   0.421    -.0862044    .2030681
+ rel_timeminus3 |   .0986359   .0887814     1.11   0.272    -.0796868    .2769587
+ rel_timeminus4 |   .0943818   .1047278     0.90   0.372    -.1159702    .3047338
+ rel_timeminus5 |   .0009559   .1399828     0.01   0.995    -.2802078    .2821197
+ rel_timeminus6 |  -.0189683   .1404496    -0.14   0.893    -.3010698    .2631331
+ rel_timeminus7 |   .0199966   .1262436     0.16   0.875    -.2335711    .2735642
+ rel_timeminus8 |   .0340378   .1463842     0.23   0.817    -.2599835     .328059
+ rel_timeminus9 |   .0728064   .1631303     0.45   0.657    -.2548506    .4004633
+rel_timeminus10 |   .0319428   .1615868     0.20   0.844    -.2926139    .3564994
+rel_timeminus11 |  -.0417849   .1486024    -0.28   0.780    -.3402616    .2566918
+rel_timeminus12 |  -.1260124   .1459687    -0.86   0.392    -.4191991    .1671744
+rel_timeminus13 |  -.0002974    .165602    -0.00   0.999    -.3329189    .3323241
+---------------------------------------------------------------------------------
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     capture matrix b = e(b_iw)
+.     if _rc == 0 & rowsof(b) > 0 {
+.         local coef = b[1,1]
+.     }
+.     else {
+.         local coef = .
+.     }
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time:   0.75s - SUCCESS
+.     store_result, scenario("`scenario'") package("eventstudyinteract-SA") ///
+>         rows(`n_rows') time(`elapsed') status("completed") coef(`coef')
+Number of observations (_N) was 3, now 4.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("eventstudyinteract-SA") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. 
+. 
+. ********************************************************************************
+. * SCENARIO 2: Synthetic Data 100x (~168,300 rows)
+. ********************************************************************************
+. display _n "========================================================================"
+
+========================================================================
+
+. display "SCENARIO 2: Synthetic Data 100x"
+SCENARIO 2: Synthetic Data 100x
+
+. display "========================================================================"
+========================================================================
+
+. 
+. create_synthetic_data, multiplier(100)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000001 saved as .dta format
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000003 saved as .dta format
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000005 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000007 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000009 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000b saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000d saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000f saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000h saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000j saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000l saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000n saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000p saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000r saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000t saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000v saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000x saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000011 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000013 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000015 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000017 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000019 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001b saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001d saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001f saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001h saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001j saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001l saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001n saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001p saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001r saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001t saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001v saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00001x saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000021 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000023 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000025 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000027 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000029 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002b saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002d saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002f saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002h saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002j saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002l saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002n saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002p saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002r saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002t saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002v saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00002x saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000031 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000033 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000035 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000037 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000039 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003b saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003d saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003f saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003h saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003j saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003l saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003n saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003p saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003r saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003t saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003v saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00003x saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000041 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000043 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000045 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000047 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000049 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004b saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004d saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004f saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004h saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004j saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004l saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004n saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004p saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004r saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004t saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004v saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00004x saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000051 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000053 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000055 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000057 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000059 saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005b saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005d saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005f saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005h saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005j saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005l saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005n saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005p saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005r saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005t saved as .dta format
+(label state already defined)
+(Divorce data from Wolfers (2006) AER)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00005v saved as .dta format
+(label state already defined)
+Created synthetic data with 168300 observations
+Unique states: 
+5100
+
+. 
+. local n_rows = _N
+
+. display "Synthetic data rows: `n_rows'"
+Synthetic data rows: 168300
+
+. 
+. local scenario "100x (168K)"
+
+. 
+. 
+. * -------------------------------------------------------------------------
+. * 1. did_multiplegt_dyn - 100x
+. * -------------------------------------------------------------------------
+. display _n "1. Running did_multiplegt_dyn on 100x data..."
+
+1. Running did_multiplegt_dyn on 100x data...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily did_multiplegt_dyn div_rate state year udl, ///
+>     effects(13) placebo(13) weight(stpop) graph_off
+
+
+--------------------------------------------------------------------------------
+             Estimation of treatment effects: Event-study effects
+--------------------------------------------------------------------------------
+
+             |  Estimate         SE      LB CI      UB CI          N  Switchers 
+-------------+-----------------------------------------------------------------
+    Effect_1 |  .3009669   .0066521    .287929   .3140047      32000       2700 
+    Effect_2 |  .3035895   .0059798   .2918694   .3153097      29400       2700 
+    Effect_3 |  .2683828   .0065722   .2555016    .281264      27100       2700 
+    Effect_4 |  .1816435   .0076149   .1667185   .1965684      25500       2700 
+    Effect_5 |  .1192688   .0091673   .1013012   .1372365      22000       2600 
+    Effect_6 |  .1148243    .010035    .095156   .1344925      21500       2600 
+    Effect_7 |  .1225242   .0117884   .0994194   .1456289      21200       2600 
+    Effect_8 |  .0653645   .0108277   .0441427   .0865864      20900       2600 
+    Effect_9 | -.0758406   .0113581   -.098102  -.0535791      20600       2600 
+   Effect_10 | -.2138813   .0127241  -.2388201  -.1889424      20500       2600 
+   Effect_11 | -.2581056   .0131297  -.2838394  -.2323718      20500       2600 
+   Effect_12 | -.4385846   .0137378  -.4655102  -.4116589      20300       2600 
+   Effect_13 | -.5012722   .0158134  -.5322658  -.4702786      18100       2500 
+--------------------------------------------------------------------------------
+Test of joint nullity of the effects : p-value = 0
+
+
+--------------------------------------------------------------------------------
+               Average cumulative (total) effect per treatment unit
+--------------------------------------------------------------------------------
+
+             |  Estimate         SE      LB CI      UB CI          N     Switch  x Periods 
+-------------+----------------------------------------------------------------------------
+  Av_tot_eff | -.0151066   .0092281  -.0331933     .00298      83700      34100            
+--------------------------------------------------------------------------------
+Average number of time periods over which a treatment's effect is accumulated = 6.9296187
+
+
+--------------------------------------------------------------------------------
+          Testing the parallel trends and no anticipation assumptions
+--------------------------------------------------------------------------------
+
+             |  Estimate         SE      LB CI      UB CI          N  Switchers 
+-------------+-----------------------------------------------------------------
+   Placebo_1 |  .0468044   .0046244   .0377407    .055868      31900       2700 
+   Placebo_2 |  .0578159   .0056996    .046645   .0689869      29300       2700 
+   Placebo_3 |  .0978812   .0073333   .0835082   .1122542      27000       2700 
+   Placebo_4 |    .05223   .0080407   .0364705   .0679895      25400       2700 
+   Placebo_5 |   .056755   .0094207   .0382907   .0752192      21900       2600 
+   Placebo_6 |  .0062875   .0095968  -.0125218   .0250968      21300       2600 
+   Placebo_7 |  .0181658   .0099062  -.0012499   .0375816      20900       2600 
+   Placebo_8 |   .073694    .011893   .0503842   .0970039      20700       2600 
+   Placebo_9 |  .0983373   .0129426   .0729702   .1237044      20500       2600 
+  Placebo_10 |  .0420555   .0142637   .0140992   .0700117      20400       2600 
+  Placebo_11 | -.0121509   .0124375   -.036528   .0122262      19900       2600 
+  Placebo_12 | -.0578349   .0134312  -.0841596  -.0315102      19400       2600 
+  Placebo_13 |  .0256646     .01726  -.0081643   .0594935      15100       2300 
+--------------------------------------------------------------------------------
+Test of joint nullity of the placebos : p-value = 0
+
+
+The development of this package was funded by the European Union (ERC, REALLYCREDIBLE,GA N°101043899).
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time:  47.42s - SUCCESS
+.     store_result, scenario("`scenario'") package("did_multiplegt_dyn") ///
+>         rows(`n_rows') time(`elapsed') status("completed")
+Number of observations (_N) was 4, now 5.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("did_multiplegt_dyn") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. * -------------------------------------------------------------------------
+. * 2. csdid - 100x
+. * -------------------------------------------------------------------------
+. display _n "2. Running csdid on 100x data..."
+
+2. Running csdid on 100x data...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily csdid div_rate [weight=stpop], ivar(state) time(year) gvar(cohort) notyet agg(event) long2
+(importance weights assumed)
+(importance weights assumed)
+Units always treated found. These will be ignored
+Panel is not balanced
+Will use observations with Pair balanced (observed at t0 and t1)
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+....................
+Difference-in-difference with Multiple Time Periods
+
+                                                       Number of obs = 154,100
+Outcome model  : regression adjustment
+Treatment model: none
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     Pre_avg |   .1488409   .0101962    14.60   0.000     .1288566    .1688251
+    Post_avg |  -.1824326   .0121686   -14.99   0.000    -.2062826   -.1585825
+        Tm29 |    .349136   .0133197    26.21   0.000     .3230298    .3752421
+        Tm28 |    .060651   .0120994     5.01   0.000     .0369366    .0843654
+        Tm27 |   .2753951   .0139712    19.71   0.000     .2480121    .3027781
+        Tm26 |    .291737   .0154547    18.88   0.000     .2614464    .3220277
+        Tm25 |   .4097278   .0164682    24.88   0.000     .3774507    .4420049
+        Tm24 |   .3669451   .0183131    20.04   0.000     .3310522    .4028381
+        Tm23 |   .4348086   .0145208    29.94   0.000     .4063484    .4632688
+        Tm22 |   .4740632   .0152862    31.01   0.000     .4441028    .5040235
+        Tm21 |  -.0345666   .0537656    -0.64   0.520    -.1399453    .0708122
+        Tm20 |   .2726257   .0348413     7.82   0.000      .204338    .3409134
+        Tm19 |   .1498854   .0267195     5.61   0.000     .0975161    .2022547
+        Tm18 |   .3823713    .015596    24.52   0.000     .3518038    .4129389
+        Tm17 |   .1302385   .0260266     5.00   0.000     .0792273    .1812496
+        Tm16 |   .1642284   .0165392     9.93   0.000     .1318121    .1966447
+        Tm15 |   .0796705   .0152627     5.22   0.000     .0497561    .1095849
+        Tm14 |  -.0633189   .0103674    -6.11   0.000    -.0836385   -.0429992
+        Tm13 |   -.072039   .0101136    -7.12   0.000    -.0918613   -.0522166
+        Tm12 |  -.0057236   .0119198    -0.48   0.631     -.029086    .0176388
+        Tm11 |   .0558966   .0136067     4.11   0.000     .0292279    .0825653
+        Tm10 |   .1111951   .0131191     8.48   0.000     .0854822     .136908
+         Tm9 |    .050821   .0116094     4.38   0.000      .028067     .073575
+         Tm8 |   .0037088    .008967     0.41   0.679    -.0138663    .0212839
+         Tm7 |  -.0052916   .0105082    -0.50   0.615    -.0258873     .015304
+         Tm6 |    .037777   .0098659     3.83   0.000     .0184403    .0571138
+         Tm5 |   .0565202   .0096335     5.87   0.000     .0376389    .0754016
+         Tm4 |   .0965951   .0064407    15.00   0.000     .0839716    .1092186
+         Tm3 |   .0537248   .0054281     9.90   0.000      .043086    .0643636
+         Tm2 |   .0407616    .005366     7.60   0.000     .0302444    .0512789
+         Tp0 |   .3087354   .0221752    13.92   0.000     .2652728     .352198
+         Tp1 |   .3055011   .0095469    32.00   0.000     .2867894    .3242127
+         Tp2 |   .2699117   .0078026    34.59   0.000     .2546189    .2852044
+         Tp3 |   .1811521    .009491    19.09   0.000       .16255    .1997541
+         Tp4 |   .1230162   .0102737    11.97   0.000     .1028802    .1431522
+         Tp5 |   .1226264   .0112492    10.90   0.000     .1005784    .1446744
+         Tp6 |   .1342118   .0129519    10.36   0.000     .1088266     .159597
+         Tp7 |   .0736374   .0130527     5.64   0.000     .0480545    .0992202
+         Tp8 |  -.0644318   .0127572    -5.05   0.000    -.0894354   -.0394283
+         Tp9 |  -.1948393   .0135196   -14.41   0.000    -.2213373   -.1683414
+        Tp10 |  -.2381772    .016078   -14.81   0.000    -.2696894   -.2066649
+        Tp11 |  -.4121967   .0168597   -24.45   0.000    -.4452412   -.3791522
+        Tp12 |    -.46958   .0173305   -27.10   0.000    -.5035472   -.4356127
+        Tp13 |  -.5008331    .019996   -25.05   0.000    -.5400246   -.4616417
+        Tp14 |  -.3881211   .0175565   -22.11   0.000    -.4225311    -.353711
+        Tp15 |  -.5157258   .0228287   -22.59   0.000    -.5604692   -.4709825
+        Tp16 |  -.4975937   .0255719   -19.46   0.000    -.5477137   -.4474738
+        Tp17 |  -.7279426   .0263916   -27.58   0.000    -.7796693    -.676216
+        Tp18 |  -1.090278   .0270296   -40.34   0.000    -1.143255   -1.037301
+        Tp19 |  -.0677238   .0202921    -3.34   0.001    -.1074955   -.0279521
+------------------------------------------------------------------------------
+Control: Not yet Treated
+
+See Callaway and Sant'Anna (2021) for details
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time: 184.53s - SUCCESS
+.     store_result, scenario("`scenario'") package("csdid-CS") ///
+>         rows(`n_rows') time(`elapsed') status("completed")
+Number of observations (_N) was 5, now 6.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("csdid-CS") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. * -------------------------------------------------------------------------
+. * 3. did_imputation - 100x
+. * -------------------------------------------------------------------------
+. display _n "3. Running did_imputation on 100x data..."
+
+3. Running did_imputation on 100x data...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily did_imputation div_rate state year first_treat_imp [aw=stpop],  horizons(0/12) autosample minn(0) pre(13)
+Warning: part of the sample was dropped for the following coefficients because FE could not be imputed: tau0 tau1 tau2 tau3 tau4 tau5 tau6
+>  tau7 tau8 tau9 tau10 tau11 tau12.
+
+                                                       Number of obs = 147,100
+------------------------------------------------------------------------------
+    div_rate | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        tau0 |   .2649129   .0102242    25.91   0.000     .2448738    .2849521
+        tau1 |   .3228116   .0107635    29.99   0.000     .3017155    .3439076
+        tau2 |   .2508727   .0120518    20.82   0.000     .2272516    .2744938
+        tau3 |   .1689476   .0131879    12.81   0.000     .1430997    .1947954
+        tau4 |   .1251728   .0144054     8.69   0.000     .0969387    .1534068
+        tau5 |   .1701519   .0158417    10.74   0.000     .1391027    .2012011
+        tau6 |    .172082   .0168218    10.23   0.000      .139112     .205052
+        tau7 |   .1102601   .0159532     6.91   0.000     .0789925    .1415277
+        tau8 |  -.0933057   .0155153    -6.01   0.000    -.1237152   -.0628962
+        tau9 |  -.2215382   .0169125   -13.10   0.000    -.2546861   -.1883902
+       tau10 |  -.2458125      .0175   -14.05   0.000    -.2801118   -.2115132
+       tau11 |  -.4276674    .017566   -24.35   0.000    -.4620961   -.3932387
+       tau12 |  -.4521017   .0195689   -23.10   0.000    -.4904561   -.4137473
+        pre1 |  -.0063006   .0165204    -0.38   0.703    -.0386801    .0260789
+        pre2 |   .0311516    .017231     1.81   0.071    -.0026205    .0649238
+        pre3 |   .0404018   .0163103     2.48   0.013     .0084343    .0723694
+        pre4 |   .0996774   .0153711     6.48   0.000     .0695506    .1298042
+        pre5 |   .0819758   .0184115     4.45   0.000     .0458899    .1180618
+        pre6 |   .0054861   .0130726     0.42   0.675    -.0201358     .031108
+        pre7 |  -.0011134   .0126004    -0.09   0.930    -.0258098     .023583
+        pre8 |   .0361219      .0135     2.68   0.007     .0096623    .0625815
+        pre9 |   .0540569   .0107282     5.04   0.000       .03303    .0750837
+       pre10 |    .101609   .0122985     8.26   0.000     .0775045    .1257136
+       pre11 |   .0641364   .0124159     5.17   0.000     .0398017     .088471
+       pre12 |   .0019235   .0104831     0.18   0.854     -.018623    .0224699
+       pre13 |  -.0784114   .0072697   -10.79   0.000    -.0926598    -.064163
+------------------------------------------------------------------------------
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. local scenario "100x (168K)"
+
+. local n_rows = _N
+
+. if `rc' == 0 {
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time:  30.69s - SUCCESS
+.     store_result, scenario("`scenario'") package("did_imputation-BJS") ///
+>         rows(`n_rows') time(`elapsed') status("completed")
+Number of observations (_N) was 6, now 7.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("did_imputation-BJS") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. * -------------------------------------------------------------------------
+. * 4. eventstudyinteract (Sun & Abraham)
+. * -------------------------------------------------------------------------
+. display _n "4. Running eventstudyinteract (Sun-Abraham)..."
+
+4. Running eventstudyinteract (Sun-Abraham)...
+
+. 
+. local scenario "100x (168K)"
+
+. local n_rows = _N
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily eventstudyinteract div_rate rel_time* [aweight=stpop], absorb(i.state i.year) cohort(first_treat) control_cohort(control
+> group) vce(cluster state)
+(sum of wgt is 349,382,390,500)
+(obs=100,400)
+
+IW estimates for dynamic effects                       Number of obs = 163,100
+Absorbing 2 HDFE groups                                F(259, 5099)  =       .
+                                                       Prob > F      =       .
+                                                       R-squared     =  0.9413
+                                                       Adj R-squared =  0.9393
+                                                       Root MSE      =  0.4770
+                                 (Std. err. adjusted for 5,100 clusters in state)
+---------------------------------------------------------------------------------
+                |               Robust
+       div_rate | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+      rel_time1 |   .2897949   .0196933    14.72   0.000     .2511876    .3284021
+      rel_time2 |   .2964111   .0083682    35.42   0.000     .2800058    .3128164
+      rel_time3 |   .2600839   .0078872    32.98   0.000     .2446217    .2755462
+      rel_time4 |   .1663565   .0098375    16.91   0.000     .1470708    .1856423
+      rel_time5 |   .1296995   .0101881    12.73   0.000     .1097263    .1496726
+      rel_time6 |   .1912945   .0113488    16.86   0.000      .169046     .213543
+      rel_time7 |   .1984976    .013469    14.74   0.000     .1720925    .2249026
+      rel_time8 |   .1151081   .0129174     8.91   0.000     .0897845    .1404317
+      rel_time9 |  -.0647595   .0124419    -5.20   0.000    -.0891509   -.0403682
+     rel_time10 |  -.1862509   .0141396   -13.17   0.000    -.2139706   -.1585312
+     rel_time11 |  -.2257223   .0158777   -14.22   0.000    -.2568494   -.1945952
+     rel_time12 |  -.4094981   .0166954   -24.53   0.000    -.4422282    -.376768
+     rel_time13 |   -.392231   .0170423   -23.02   0.000    -.4256413   -.3588207
+ rel_timeminus1 |   .0614356   .0049155    12.50   0.000     .0517991    .0710721
+ rel_timeminus2 |   .0584319   .0065492     8.92   0.000     .0455926    .0712711
+ rel_timeminus3 |   .0986359   .0080792    12.21   0.000     .0827973    .1144746
+ rel_timeminus4 |   .0943818   .0096408     9.79   0.000     .0754817    .1132819
+ rel_timeminus5 |   .0009559   .0130344     0.07   0.942    -.0245972     .026509
+ rel_timeminus6 |  -.0189683   .0131467    -1.44   0.149    -.0447415    .0068048
+ rel_timeminus7 |   .0199966   .0116331     1.72   0.086    -.0028092    .0428023
+ rel_timeminus8 |   .0340378   .0136424     2.49   0.013     .0072928    .0607828
+ rel_timeminus9 |   .0728064   .0151428     4.81   0.000     .0431201    .1024927
+rel_timeminus10 |   .0319428   .0148739     2.15   0.032     .0027836    .0611019
+rel_timeminus11 |  -.0417849   .0138228    -3.02   0.003    -.0688835   -.0146863
+rel_timeminus12 |  -.1260124   .0135938    -9.27   0.000     -.152662   -.0993627
+rel_timeminus13 |  -.0002974   .0150346    -0.02   0.984    -.0297716    .0291768
+---------------------------------------------------------------------------------
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     capture matrix b = e(b_iw)
+.     if _rc == 0 & rowsof(b) > 0 {
+.         local coef = b[1,1]
+.     }
+.     else {
+.         local coef = .
+.     }
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time:  51.62s - SUCCESS
+.     store_result, scenario("`scenario'") package("eventstudyinteract-SA") ///
+>         rows(`n_rows') time(`elapsed') status("completed") coef(`coef')
+Number of observations (_N) was 7, now 8.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("eventstudyinteract-SA") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. 
+. 
+. ********************************************************************************
+. * SCENARIO 3: Synthetic Data 1000x (~1,683,000 rows)
+. ********************************************************************************
+. display _n "========================================================================"
+
+========================================================================
+
+. display "SCENARIO 3: Synthetic Data 1000x"
+SCENARIO 3: Synthetic Data 1000x
+
+. display "========================================================================"
+========================================================================
+
+. 
+. use `wolfers_base', clear
+invalid file specification
+r(198);
+
+end of do-file
+
+r(198);
+
+. do "/var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//SD47422.000000"
+
+. create_synthetic_data, multiplier(10)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000001 saved as .dta format
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000003 saved as .dta format
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000005 saved as .dta format
+(label state already defined)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000007 saved as .dta format
+(label state already defined)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.000009 saved as .dta format
+(label state already defined)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000b saved as .dta format
+(label state already defined)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000d saved as .dta format
+(label state already defined)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000f saved as .dta format
+(label state already defined)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000h saved as .dta format
+(label state already defined)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000j saved as .dta format
+(label state already defined)
+file /var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//S_47422.00000l saved as .dta format
+(label state already defined)
+Created synthetic data with 1683000 observations
+Unique states: 
+51000
+
+. 
+end of do-file
+
+. unique states
+variable states not found
+r(111);
+
+. unique state
+Number of unique values of state is  51000
+Number of records is  1683000
+
+. do "/var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//SD47422.000000"
+
+. 
+. local n_rows = _N
+
+. display "Synthetic data rows: `n_rows'"
+Synthetic data rows: 1683000
+
+. 
+. local scenario "1000x (1.68M)"
+
+. 
+. 
+. * -------------------------------------------------------------------------
+. * 1. did_multiplegt_dyn - 1000x
+. * -------------------------------------------------------------------------
+. display _n "1. Running did_multiplegt_dyn on 1000x data..."
+
+1. Running did_multiplegt_dyn on 1000x data...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily did_multiplegt_dyn div_rate state year udl, ///
+>     effects(13) placebo(13) weight(stpop) graph_off
+
+
+--------------------------------------------------------------------------------
+             Estimation of treatment effects: Event-study effects
+--------------------------------------------------------------------------------
+
+             |  Estimate         SE      LB CI      UB CI          N  Switchers 
+-------------+-----------------------------------------------------------------
+    Effect_1 |  .3009669   .0020999   .2968511   .3050826     320000      27000 
+    Effect_2 |  .3035895   .0018888   .2998876   .3072915     294000      27000 
+    Effect_3 |  .2683828   .0020765   .2643129   .2724527     271000      27000 
+    Effect_4 |  .1816435   .0024064   .1769269     .18636     255000      27000 
+    Effect_5 |  .1192688   .0028972   .1135904   .1249473     220000      26000 
+    Effect_6 |  .1148243   .0031714   .1086084   .1210401     215000      26000 
+    Effect_7 |  .1225242   .0037253   .1152227   .1298257     212000      26000 
+    Effect_8 |  .0653645   .0034224   .0586567   .0720723     209000      26000 
+    Effect_9 | -.0758406   .0035904  -.0828776  -.0688036     206000      26000 
+   Effect_10 | -.2138813   .0040222  -.2217647  -.2059979     205000      26000 
+   Effect_11 | -.2581056   .0041505  -.2662404  -.2499708     205000      26000 
+   Effect_12 | -.4385846   .0043428  -.4470962  -.4300729     203000      26000 
+   Effect_13 | -.5012722   .0049988  -.5110697  -.4914747     181000      25000 
+--------------------------------------------------------------------------------
+Test of joint nullity of the effects : p-value = 0
+
+
+--------------------------------------------------------------------------------
+               Average cumulative (total) effect per treatment unit
+--------------------------------------------------------------------------------
+
+             |  Estimate         SE      LB CI      UB CI          N     Switch  x Periods 
+-------------+----------------------------------------------------------------------------
+  Av_tot_eff | -.0151066   .0029168  -.0208235  -.0093897     837000     341000            
+--------------------------------------------------------------------------------
+Average number of time periods over which a treatment's effect is accumulated = 6.9296187
+
+
+--------------------------------------------------------------------------------
+          Testing the parallel trends and no anticipation assumptions
+--------------------------------------------------------------------------------
+
+             |  Estimate         SE      LB CI      UB CI          N  Switchers 
+-------------+-----------------------------------------------------------------
+   Placebo_1 |  .0468044   .0014616   .0439396   .0496691     319000      27000 
+   Placebo_2 |  .0578159   .0018016   .0542848   .0613471     293000      27000 
+   Placebo_3 |  .0978812   .0023182   .0933376   .1024248     270000      27000 
+   Placebo_4 |    .05223   .0025419    .047248    .057212     254000      27000 
+   Placebo_5 |   .056755    .002978   .0509182   .0625917     219000      26000 
+   Placebo_6 |  .0062875   .0030338   .0003415   .0122336     213000      26000 
+   Placebo_7 |  .0181658   .0031316   .0120281   .0243036     209000      26000 
+   Placebo_8 |   .073694   .0037592   .0663261    .081062     207000      26000 
+   Placebo_9 |  .0983373   .0040908   .0903196    .106355     205000      26000 
+  Placebo_10 |  .0420555   .0045081   .0332197   .0508912     204000      26000 
+  Placebo_11 | -.0121509   .0039311  -.0198558   -.004446     199000      26000 
+  Placebo_12 | -.0578349   .0042453  -.0661556  -.0495141     194000      26000 
+  Placebo_13 |  .0256646   .0054554   .0149722    .036357     151000      23000 
+--------------------------------------------------------------------------------
+Test of joint nullity of the placebos : p-value = 0
+
+
+The development of this package was funded by the European Union (ERC, REALLYCREDIBLE,GA N°101043899).
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time: 543.28s - SUCCESS
+.     store_result, scenario("`scenario'") package("did_multiplegt_dyn") ///
+>         rows(`n_rows') time(`elapsed') status("completed")
+Number of observations (_N) was 8, now 9.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("did_multiplegt_dyn") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. * -------------------------------------------------------------------------
+. * 2. did_imputation - 1000x
+. * -------------------------------------------------------------------------
+. display _n "2. Running did_imputation on 1000x data..."
+
+2. Running did_imputation on 1000x data...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily did_imputation div_rate state year first_treat_imp [aw=stop],  horizons(0/12) autosample minn(0) pre(13)
+stop not found
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+.     store_result, scenario("`scenario'") package("did_imputation-BJS") ///
+>         rows(`n_rows') time(`elapsed') status("completed")
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+   Time:   0.02s - ERROR
+.     store_result, scenario("`scenario'") package("did_imputation-BJS") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+Number of observations (_N) was 9, now 10.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. 
+. * -------------------------------------------------------------------------
+. * 3. csdid - 1000x
+. * -------------------------------------------------------------------------
+. display _n "2. Running csdid on 1000x data..."
+
+2. Running csdid on 1000x data...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily csdid div_rate [weight=stpop], ivar(state) time(year) gvar(cohort) notyet agg(event)
+(importance weights assumed)
+(importance weights assumed)
+Units always treated found. These will be ignored
+Panel is not balanced
+Will use observations with Pair balanced (observed at t0 and t1)
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+..................................................
+....................
+Difference-in-difference with Multiple Time Periods
+
+                                                     Number of obs = 1,540,000
+Outcome model  : regression adjustment
+Treatment model: none
+------------------------------------------------------------------------------
+             | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     Pre_avg |   .0023223   .0002351     9.88   0.000     .0018615    .0027832
+    Post_avg |  -.1824326   .0038481   -47.41   0.000    -.1899746   -.1748905
+        Tm28 |  -.2890156   .0013309  -217.17   0.000    -.2916241   -.2864072
+        Tm27 |    .163944   .0015081   108.71   0.000     .1609881    .1668999
+        Tm26 |   .0167286    .000779    21.48   0.000     .0152019    .0182553
+        Tm25 |   .1172166   .0010733   109.21   0.000     .1151129    .1193203
+        Tm24 |  -.0446571   .0015733   -28.38   0.000    -.0477407   -.0415736
+        Tm23 |   .0667315   .0027984    23.85   0.000     .0612467    .0722163
+        Tm22 |   .0396886   .0007454    53.25   0.000     .0382277    .0411495
+        Tm21 |   .0670523   .0005194   129.10   0.000     .0660344    .0680703
+        Tm20 |  -.0048487    .001158    -4.19   0.000    -.0071184    -.002579
+        Tm19 |  -.0125973   .0027689    -4.55   0.000    -.0180242   -.0071704
+        Tm18 |   .0201021   .0015286    13.15   0.000      .017106    .0230982
+        Tm17 |   .0136825   .0008985    15.23   0.000     .0119214    .0154435
+        Tm16 |   .0760483       .004    19.01   0.000     .0682085    .0838881
+        Tm15 |  -.1233456   .0034597   -35.65   0.000    -.1301265   -.1165647
+        Tm14 |  -.1977112   .0028966   -68.26   0.000    -.2033884   -.1920341
+        Tm13 |   .0620389   .0025909    23.94   0.000     .0569609     .067117
+        Tm12 |   .0947127   .0018407    51.45   0.000     .0911049    .0983205
+        Tm11 |   .0628065    .001375    45.68   0.000     .0601116    .0655015
+        Tm10 |   .0352604   .0010317    34.18   0.000     .0332383    .0372825
+         Tm9 |  -.0595367   .0022126   -26.91   0.000    -.0638733   -.0552001
+         Tm8 |  -.0124595   .0021162    -5.89   0.000    -.0166072   -.0083118
+         Tm7 |  -.0392456   .0015229   -25.77   0.000    -.0422304   -.0362608
+         Tm6 |   .0219373   .0010872    20.18   0.000     .0198064    .0240682
+         Tm5 |   .0661813   .0037133    17.82   0.000     .0589033    .0734593
+         Tm4 |   .0177895   .0021444     8.30   0.000     .0135866    .0219924
+         Tm3 |  -.0411057    .001363   -30.16   0.000    -.0437771   -.0384343
+         Tm2 |   -.011611   .0012096    -9.60   0.000    -.0139818   -.0092402
+         Tm1 |  -.0407616   .0016969   -24.02   0.000    -.0440875   -.0374358
+         Tp0 |   .3087354   .0070124    44.03   0.000     .2949913    .3224795
+         Tp1 |   .3055011    .003019   101.19   0.000     .2995839    .3114182
+         Tp2 |   .2699117   .0024674   109.39   0.000     .2650757    .2747476
+         Tp3 |   .1811521   .0030013    60.36   0.000     .1752696    .1870345
+         Tp4 |   .1230162   .0032488    37.86   0.000     .1166486    .1293837
+         Tp5 |   .1226264   .0035573    34.47   0.000     .1156542    .1295986
+         Tp6 |   .1342118   .0040957    32.77   0.000     .1261843    .1422393
+         Tp7 |   .0736374   .0041276    17.84   0.000     .0655473    .0817274
+         Tp8 |  -.0644318   .0040342   -15.97   0.000    -.0723386    -.056525
+         Tp9 |  -.1948393   .0042753   -45.57   0.000    -.2032187     -.18646
+        Tp10 |  -.2381772   .0050843   -46.85   0.000    -.2481422   -.2282121
+        Tp11 |  -.4121967   .0053315   -77.31   0.000    -.4226463   -.4017471
+        Tp12 |    -.46958   .0054804   -85.68   0.000    -.4803214   -.4588386
+        Tp13 |  -.5008331   .0063233   -79.20   0.000    -.5132266   -.4884397
+        Tp14 |  -.3881211   .0055518   -69.91   0.000    -.3990025   -.3772396
+        Tp15 |  -.5157258   .0072191   -71.44   0.000    -.5298749   -.5015767
+        Tp16 |  -.4975937   .0080865   -61.53   0.000    -.5134431   -.4817444
+        Tp17 |  -.7279426   .0083458   -87.22   0.000       -.7443   -.7115852
+        Tp18 |  -1.090278   .0085475  -127.55   0.000    -1.107031   -1.073525
+        Tp19 |  -.0677238   .0064169   -10.55   0.000    -.0803007   -.0551469
+------------------------------------------------------------------------------
+Control: Not yet Treated
+
+See Callaway and Sant'Anna (2021) for details
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time: 2253.45s - SUCCESS
+.     store_result, scenario("`scenario'") package("csdid-CS") ///
+>         rows(`n_rows') time(`elapsed') status("completed")
+Number of observations (_N) was 10, now 11.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("csdid-CS") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+. 
+. * -------------------------------------------------------------------------
+. * 4. eventstudyinteract (Sun & Abraham)
+. * -------------------------------------------------------------------------
+. display _n "4. Running eventstudyinteract (Sun-Abraham)..."
+
+4. Running eventstudyinteract (Sun-Abraham)...
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily eventstudyinteract div_rate rel_time* [aweight=stpop], absorb(i.state i.year) cohort(first_treat) control_cohort(control
+> group) vce(cluster state)
+(sum of wgt is 3493823905000)
+(obs=1,004,000)
+
+IW estimates for dynamic effects                     Number of obs = 1,631,000
+Absorbing 2 HDFE groups                              F(259, 50999) =         .
+                                                     Prob > F      =         .
+                                                     R-squared     =    0.9413
+                                                     Adj R-squared =    0.9394
+                                                     Root MSE      =    0.4766
+                                (Std. err. adjusted for 51,000 clusters in state)
+---------------------------------------------------------------------------------
+                |               Robust
+       div_rate | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+      rel_time1 |   .2897949   .0062269    46.54   0.000     .2775901    .3019996
+      rel_time2 |   .2964111   .0026449   112.07   0.000      .291227    .3015952
+      rel_time3 |   .2600839   .0024924   104.35   0.000     .2551989     .264969
+      rel_time4 |   .1663565   .0031089    53.51   0.000     .1602631    .1724499
+      rel_time5 |   .1296995   .0032196    40.28   0.000     .1233891    .1360098
+      rel_time6 |   .1912945   .0035862    53.34   0.000     .1842655    .1983234
+      rel_time7 |   .1984976   .0042563    46.64   0.000     .1901551      .20684
+      rel_time8 |   .1151081   .0040824    28.20   0.000     .1071067    .1231096
+      rel_time9 |  -.0647595   .0039317   -16.47   0.000    -.0724658   -.0570533
+     rel_time10 |  -.1862509   .0044683   -41.68   0.000    -.1950088    -.177493
+     rel_time11 |  -.2257223    .005018   -44.98   0.000    -.2355576   -.2158869
+     rel_time12 |  -.4094981   .0052764   -77.61   0.000      -.41984   -.3991563
+     rel_time13 |   -.392231    .005385   -72.84   0.000    -.4027856   -.3816764
+ rel_timeminus1 |   .0614356   .0015533    39.55   0.000     .0583911    .0644801
+ rel_timeminus2 |   .0584319   .0020694    28.24   0.000     .0543758     .062488
+ rel_timeminus3 |   .0986359   .0025529    38.64   0.000     .0936323    .1036396
+ rel_timeminus4 |   .0943818   .0030466    30.98   0.000     .0884104    .1003533
+ rel_timeminus5 |   .0009559   .0041195     0.23   0.817    -.0071183    .0090302
+ rel_timeminus6 |  -.0189683   .0041552    -4.57   0.000    -.0271125   -.0108242
+ rel_timeminus7 |   .0199966   .0036763     5.44   0.000      .012791    .0272021
+ rel_timeminus8 |   .0340378   .0043117     7.89   0.000     .0255868    .0424887
+ rel_timeminus9 |   .0728064   .0047857    15.21   0.000     .0634264    .0821864
+rel_timeminus10 |   .0319428   .0047004     6.80   0.000       .02273    .0411555
+rel_timeminus11 |  -.0417849   .0043686    -9.56   0.000    -.0503474   -.0332224
+rel_timeminus12 |  -.1260124   .0042963   -29.33   0.000    -.1344331   -.1175916
+rel_timeminus13 |  -.0002974   .0047506    -0.06   0.950    -.0096086    .0090137
+---------------------------------------------------------------------------------
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     capture matrix b = e(b_iw)
+.     if _rc == 0 & rowsof(b) > 0 {
+.         local coef = b[1,1]
+.     }
+.     else {
+.         local coef = .
+.     }
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time: 507.74s - SUCCESS
+.     store_result, scenario("`scenario'") package("eventstudyinteract-SA") ///
+>         rows(`n_rows') time(`elapsed') status("completed") coef(`coef')
+Number of observations (_N) was 11, now 12.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("eventstudyinteract-SA") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+end of do-file
+
+. do "/var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//SD47422.000000"
+
+. * -------------------------------------------------------------------------
+. * 2. did_imputation - 1000x
+. * -------------------------------------------------------------------------
+. display _n "2. Running did_imputation on 1000x data..."
+
+2. Running did_imputation on 1000x data...
+
+. local n_rows = _N
+
+. display "Synthetic data rows: `n_rows'"
+Synthetic data rows: 1683000
+
+. 
+. local scenario "1000x (1.68M)"
+
+. 
+. timer clear 1
+
+. timer on 1
+
+. 
+. capture noisily did_imputation div_rate state year first_treat_imp [aw=stpop],  horizons(0/12) autosample minn(0) pre(13)
+Warning: part of the sample was dropped for the following coefficients because FE could not be imputed: tau0 tau1 tau2 tau3 tau4 tau5 tau6
+>  tau7 tau8 tau9 tau10 tau11 tau12.
+
+                                                     Number of obs = 1,471,000
+------------------------------------------------------------------------------
+    div_rate | Coefficient  Std. err.      z    P>|z|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+        tau0 |   .2649129   .0032332    81.94   0.000      .258576    .2712498
+        tau1 |   .3228116   .0034037    94.84   0.000     .3161404    .3294827
+        tau2 |   .2508727   .0038111    65.83   0.000      .243403    .2583423
+        tau3 |   .1689476   .0041704    40.51   0.000     .1607737    .1771214
+        tau4 |   .1251728   .0045554    27.48   0.000     .1162444    .1341012
+        tau5 |   .1701519   .0050096    33.97   0.000     .1603333    .1799705
+        tau6 |    .172082   .0053195    32.35   0.000      .161656     .182508
+        tau7 |   .1102601   .0050448    21.86   0.000     .1003724    .1201478
+        tau8 |  -.0933057   .0049064   -19.02   0.000     -.102922   -.0836894
+        tau9 |  -.2215382   .0053482   -41.42   0.000    -.2320205   -.2110559
+       tau10 |  -.2458125    .005534   -44.42   0.000    -.2566589   -.2349661
+       tau11 |  -.4276674   .0055549   -76.99   0.000    -.4385547   -.4167801
+       tau12 |  -.4521017   .0061882   -73.06   0.000    -.4642304   -.4399729
+        pre1 |  -.0063006   .0052228    -1.21   0.228    -.0165371    .0039359
+        pre2 |   .0311516   .0054475     5.72   0.000     .0204748    .0418284
+        pre3 |   .0404018   .0051564     7.84   0.000     .0302955    .0505081
+        pre4 |   .0996774   .0048595    20.51   0.000      .090153    .1092018
+        pre5 |   .0819758   .0058207    14.08   0.000     .0705676    .0933841
+        pre6 |   .0054861   .0041328     1.33   0.184    -.0026141    .0135862
+        pre7 |  -.0011134   .0039835    -0.28   0.780     -.008921    .0066942
+        pre8 |   .0361219   .0042679     8.46   0.000     .0277569    .0444869
+        pre9 |   .0540569   .0033916    15.94   0.000     .0474094    .0607043
+       pre10 |    .101609   .0038881    26.13   0.000     .0939886    .1092295
+       pre11 |   .0641364   .0039252    16.34   0.000     .0564432    .0718296
+       pre12 |   .0019235   .0033141     0.58   0.562    -.0045721    .0084191
+       pre13 |  -.0784114   .0022983   -34.12   0.000    -.0829159   -.0739069
+------------------------------------------------------------------------------
+
+. 
+. local rc = _rc
+
+. timer off 1
+
+. quietly timer list 1
+
+. local elapsed = r(t1)
+
+. 
+. if `rc' == 0 {
+.     display "   Time: " %6.2f `elapsed' "s - SUCCESS"
+   Time: 241.72s - SUCCESS
+.     store_result, scenario("`scenario'") package("did_imputation-BJS") ///
+>         rows(`n_rows') time(`elapsed') status("completed")
+Number of observations (_N) was 12, now 13.
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+(1 real change made)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/temp_benchmark_results.dta saved
+. }
+
+. else {
+.     display "   Time: " %6.2f `elapsed' "s - ERROR"
+.     store_result, scenario("`scenario'") package("did_imputation-BJS") ///
+>         rows(`n_rows') time(`elapsed') status("error")
+. }
+
+. 
+end of do-file
+
+. do "/var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//SD47422.000000"
+
+. ********************************************************************************
+. * SUMMARY OF RESULTS
+. ********************************************************************************
+. display _n "========================================================================"
+
+========================================================================
+
+. display "SUMMARY OF RESULTS"
+SUMMARY OF RESULTS
+
+. display "========================================================================"
+========================================================================
+
+. 
+. use "$results_file", clear
+
+. drop if missing(scenario)
+(0 observations deleted)
+
+. 
+. list scenario package rows time_seconds status coefficient, noobs clean
+
+           scenario                 package      rows   time_s~s      status   coeffic~t  
+    Original (1.7K)      did_multiplegt_dyn      1683      2.807   completed   .30096685  
+    Original (1.7K)                csdid-CS      1683      4.886   completed   .14884087  
+    Original (1.7K)      did_imputation-BJS      1683       .747   completed   .26491289  
+    Original (1.7K)   eventstudyinteract-SA      1683       .753   completed   .28979485  
+        100x (168K)      did_multiplegt_dyn    168300     47.417   completed           .  
+        100x (168K)                csdid-CS    168300    184.533   completed           .  
+        100x (168K)      did_imputation-BJS    168300      30.69   completed           .  
+        100x (168K)   eventstudyinteract-SA    168300     51.617   completed   .28979485  
+      1000x (1.68M)      did_multiplegt_dyn   1683000    543.278   completed           .  
+      1000x (1.68M)      did_imputation-BJS   1683000       .023       error           .  
+      1000x (1.68M)                csdid-CS   1683000   2253.447   completed           .  
+      1000x (1.68M)   eventstudyinteract-SA   1683000    507.737   completed   .28979485  
+      1000x (1.68M)      did_imputation-BJS   1683000    241.725   completed           .  
+
+. 
+. * Create pivot table manually
+. display _n _n "PIVOT TABLE (Time in seconds):"
+
+
+PIVOT TABLE (Time in seconds):
+
+. display "========================================================================"
+========================================================================
+
+. 
+. preserve
+
+. reshape wide time_seconds, i(package) j(scenario) string
+string j variable scenario not allowed to contain spaces;
+    encode string variable scenario into a numeric variable and use the new numeric variable as the j variable
+r(111);
+
+end of do-file
+
+r(111);
+
+. tab scenario
+
+            scenario |      Freq.     Percent        Cum.
+---------------------+-----------------------------------
+       1000x (1.68M) |          5       38.46       38.46
+         100x (168K) |          4       30.77       69.23
+     Original (1.7K) |          4       30.77      100.00
+---------------------+-----------------------------------
+               Total |         13      100.00
+
+. tab package
+
+                       package |      Freq.     Percent        Cum.
+-------------------------------+-----------------------------------
+                      csdid-CS |          3       23.08       23.08
+            did_imputation-BJS |          4       30.77       53.85
+            did_multiplegt_dyn |          3       23.08       76.92
+         eventstudyinteract-SA |          3       23.08      100.00
+-------------------------------+-----------------------------------
+                         Total |         13      100.00
+
+. tab time_seconds
+
+time_second |
+          s |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       .023 |          1        7.69        7.69
+       .747 |          1        7.69       15.38
+       .753 |          1        7.69       23.08
+      2.807 |          1        7.69       30.77
+      4.886 |          1        7.69       38.46
+      30.69 |          1        7.69       46.15
+     47.417 |          1        7.69       53.85
+     51.617 |          1        7.69       61.54
+    184.533 |          1        7.69       69.23
+    241.725 |          1        7.69       76.92
+    507.737 |          1        7.69       84.62
+    543.278 |          1        7.69       92.31
+   2253.447 |          1        7.69      100.00
+------------+-----------------------------------
+      Total |         13      100.00
+
+. br
+
+. drop if status == "error"
+(1 observation deleted)
+
+. do "/var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//SD47422.000000"
+
+. list scenario package rows time_seconds status coefficient, noobs clean
+
+           scenario                 package      rows   time_s~s      status   coeffic~t  
+    Original (1.7K)      did_multiplegt_dyn      1683      2.807   completed   .30096685  
+    Original (1.7K)                csdid-CS      1683      4.886   completed   .14884087  
+    Original (1.7K)      did_imputation-BJS      1683       .747   completed   .26491289  
+    Original (1.7K)   eventstudyinteract-SA      1683       .753   completed   .28979485  
+        100x (168K)      did_multiplegt_dyn    168300     47.417   completed           .  
+        100x (168K)                csdid-CS    168300    184.533   completed           .  
+        100x (168K)      did_imputation-BJS    168300      30.69   completed           .  
+        100x (168K)   eventstudyinteract-SA    168300     51.617   completed   .28979485  
+      1000x (1.68M)      did_multiplegt_dyn   1683000    543.278   completed           .  
+      1000x (1.68M)                csdid-CS   1683000   2253.447   completed           .  
+      1000x (1.68M)   eventstudyinteract-SA   1683000    507.737   completed   .28979485  
+      1000x (1.68M)      did_imputation-BJS   1683000    241.725   completed           .  
+
+. 
+. * Create pivot table manually
+. display _n _n "PIVOT TABLE (Time in seconds):"
+
+
+PIVOT TABLE (Time in seconds):
+
+. display "========================================================================"
+========================================================================
+
+. 
+. preserve
+
+. reshape wide time_seconds, i(package) j(scenario) string
+string j variable scenario not allowed to contain spaces;
+    encode string variable scenario into a numeric variable and use the new numeric variable as the j variable
+r(111);
+
+end of do-file
+
+r(111);
+
+. do "/var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//SD47422.000000"
+
+. ********************************************************************************
+. * SUMMARY OF RESULTS
+. ********************************************************************************
+. display _n "========================================================================"
+
+========================================================================
+
+. display "SUMMARY OF RESULTS"
+SUMMARY OF RESULTS
+
+. display "========================================================================"
+========================================================================
+
+. 
+. use "$results_file", clear
+
+. drop if missing(scenario)
+(0 observations deleted)
+
+. drop if status == "error"
+(1 observation deleted)
+
+. list scenario package rows time_seconds status coefficient, noobs clean
+
+           scenario                 package      rows   time_s~s      status   coeffic~t  
+    Original (1.7K)      did_multiplegt_dyn      1683      2.807   completed   .30096685  
+    Original (1.7K)                csdid-CS      1683      4.886   completed   .14884087  
+    Original (1.7K)      did_imputation-BJS      1683       .747   completed   .26491289  
+    Original (1.7K)   eventstudyinteract-SA      1683       .753   completed   .28979485  
+        100x (168K)      did_multiplegt_dyn    168300     47.417   completed           .  
+        100x (168K)                csdid-CS    168300    184.533   completed           .  
+        100x (168K)      did_imputation-BJS    168300      30.69   completed           .  
+        100x (168K)   eventstudyinteract-SA    168300     51.617   completed   .28979485  
+      1000x (1.68M)      did_multiplegt_dyn   1683000    543.278   completed           .  
+      1000x (1.68M)                csdid-CS   1683000   2253.447   completed           .  
+      1000x (1.68M)   eventstudyinteract-SA   1683000    507.737   completed   .28979485  
+      1000x (1.68M)      did_imputation-BJS   1683000    241.725   completed           .  
+
+. 
+. * Create pivot table manually
+. display _n _n "PIVOT TABLE (Time in seconds):"
+
+
+PIVOT TABLE (Time in seconds):
+
+. display "========================================================================"
+========================================================================
+
+. 
+. preserve
+
+. * Encode the string variable into numeric
+. encode scenario, gen(scenario_num)
+
+. 
+. * Drop the original string variable
+. drop scenario
+
+. 
+. * Now reshape using the numeric version
+. reshape wide time_seconds, i(package) j(scenario_num)
+variable rows not constant within package
+variable coefficient not constant within package
+variable std_error not constant within package
+    Your data are currently long. You are performing a reshape wide. You typed something like
+
+        . reshape wide a b, i(package) j(scenario_num)
+
+    There are variables other than a, b, package, scenario_num in your data. They must be constant within package because that is the
+    only way they can fit into wide data without loss of information.
+
+    The variable or variables listed above are not constant within package. Perhaps the values are in error. Type reshape error for a
+    list of the problem observations.
+
+    Either that, or the values vary because they should vary, in which case you must either add the variables to the list of xij
+    variables to be reshaped, or drop them.
+r(9);
+
+end of do-file
+
+r(9);
+
+. do "/var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//SD47422.000000"
+
+. ********************************************************************************
+. * SUMMARY OF RESULTS
+. ********************************************************************************
+. display _n "========================================================================"
+
+========================================================================
+
+. display "SUMMARY OF RESULTS"
+SUMMARY OF RESULTS
+
+. display "========================================================================"
+========================================================================
+
+. 
+. use "$results_file", clear
+
+. drop if missing(scenario)
+(0 observations deleted)
+
+. drop if status == "error"
+(1 observation deleted)
+
+. list scenario package rows time_seconds status coefficient, noobs clean
+
+           scenario                 package      rows   time_s~s      status   coeffic~t  
+    Original (1.7K)      did_multiplegt_dyn      1683      2.807   completed   .30096685  
+    Original (1.7K)                csdid-CS      1683      4.886   completed   .14884087  
+    Original (1.7K)      did_imputation-BJS      1683       .747   completed   .26491289  
+    Original (1.7K)   eventstudyinteract-SA      1683       .753   completed   .28979485  
+        100x (168K)      did_multiplegt_dyn    168300     47.417   completed           .  
+        100x (168K)                csdid-CS    168300    184.533   completed           .  
+        100x (168K)      did_imputation-BJS    168300      30.69   completed           .  
+        100x (168K)   eventstudyinteract-SA    168300     51.617   completed   .28979485  
+      1000x (1.68M)      did_multiplegt_dyn   1683000    543.278   completed           .  
+      1000x (1.68M)                csdid-CS   1683000   2253.447   completed           .  
+      1000x (1.68M)   eventstudyinteract-SA   1683000    507.737   completed   .28979485  
+      1000x (1.68M)      did_imputation-BJS   1683000    241.725   completed           .  
+
+. 
+. * Create pivot table manually
+. display _n _n "PIVOT TABLE (Time in seconds):"
+
+
+PIVOT TABLE (Time in seconds):
+
+. display "========================================================================"
+========================================================================
+
+. 
+. preserve
+
+. * Encode the string variable into numeric
+. encode scenario, gen(scenario_num)
+
+. 
+. * Drop the original string variable
+. drop scenario
+
+. drop coefficient
+
+. * Now reshape using the numeric version
+. reshape wide time_seconds, i(package) j(scenario_num)
+variable rows not constant within package
+variable std_error not constant within package
+    Your data are currently long. You are performing a reshape wide. You typed something like
+
+        . reshape wide a b, i(package) j(scenario_num)
+
+    There are variables other than a, b, package, scenario_num in your data. They must be constant within package because that is the
+    only way they can fit into wide data without loss of information.
+
+    The variable or variables listed above are not constant within package. Perhaps the values are in error. Type reshape error for a
+    list of the problem observations.
+
+    Either that, or the values vary because they should vary, in which case you must either add the variables to the list of xij
+    variables to be reshaped, or drop them.
+r(9);
+
+end of do-file
+
+r(9);
+
+. tab rows
+
+       rows |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       1683 |          4       33.33       33.33
+     168300 |          4       33.33       66.67
+    1683000 |          4       33.33      100.00
+------------+-----------------------------------
+      Total |         12      100.00
+
+. do "/var/folders/gb/56xms55d53n734tnp7xq55bh0000gq/T//SD47422.000000"
+
+. ********************************************************************************
+. * SUMMARY OF RESULTS
+. ********************************************************************************
+. display _n "========================================================================"
+
+========================================================================
+
+. display "SUMMARY OF RESULTS"
+SUMMARY OF RESULTS
+
+. display "========================================================================"
+========================================================================
+
+. 
+. use "$results_file", clear
+
+. drop if missing(scenario)
+(0 observations deleted)
+
+. drop if status == "error"
+(1 observation deleted)
+
+. list scenario package rows time_seconds status coefficient, noobs clean
+
+           scenario                 package      rows   time_s~s      status   coeffic~t  
+    Original (1.7K)      did_multiplegt_dyn      1683      2.807   completed   .30096685  
+    Original (1.7K)                csdid-CS      1683      4.886   completed   .14884087  
+    Original (1.7K)      did_imputation-BJS      1683       .747   completed   .26491289  
+    Original (1.7K)   eventstudyinteract-SA      1683       .753   completed   .28979485  
+        100x (168K)      did_multiplegt_dyn    168300     47.417   completed           .  
+        100x (168K)                csdid-CS    168300    184.533   completed           .  
+        100x (168K)      did_imputation-BJS    168300      30.69   completed           .  
+        100x (168K)   eventstudyinteract-SA    168300     51.617   completed   .28979485  
+      1000x (1.68M)      did_multiplegt_dyn   1683000    543.278   completed           .  
+      1000x (1.68M)                csdid-CS   1683000   2253.447   completed           .  
+      1000x (1.68M)   eventstudyinteract-SA   1683000    507.737   completed   .28979485  
+      1000x (1.68M)      did_imputation-BJS   1683000    241.725   completed           .  
+
+. 
+. * Create pivot table manually
+. display _n _n "PIVOT TABLE (Time in seconds):"
+
+
+PIVOT TABLE (Time in seconds):
+
+. display "========================================================================"
+========================================================================
+
+. 
+. preserve
+
+. * Encode the string variable into numeric
+. encode scenario, gen(scenario_num)
+
+. 
+. * Drop the original string variable
+. drop scenario coefficient std_error
+
+. * Now reshape using the numeric version
+. reshape wide time_seconds rows, i(package) j(scenario_num)
+(j = 1 2 3)
+
+Data                               Long   ->   Wide
+-----------------------------------------------------------------------------
+Number of observations               12   ->   4           
+Number of variables                   5   ->   8           
+j variable (3 values)      scenario_num   ->   (dropped)
+xij variables:
+                           time_seconds   ->   time_seconds1 time_seconds2 time_seconds3
+                                   rows   ->   rows1 rows2 rows3
+-----------------------------------------------------------------------------
+
+. list package time_seconds*, noobs clean
+
+                  package   time_s~1   time_s~2   time_s~3  
+                 csdid-CS   2253.447    184.533      4.886  
+       did_imputation-BJS    241.725      30.69       .747  
+       did_multiplegt_dyn    543.278     47.417      2.807  
+    eventstudyinteract-SA    507.737     51.617       .753  
+
+. restore
+
+. 
+. * Save results to CSV
+. export delimited using "$save_path/benchmark_results_stata.csv", replace
+(file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/benchmark_results_stata.csv not found)
+file /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/benchmark_results_stata.csv saved
+
+. 
+. display _n "Results saved to: $save_path/benchmark_results_stata.csv"
+
+Results saved to: /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/benchmark_results_stata.csv
+
+. 
+. * Summary statistics
+. display _n "Runtime Statistics:"
+
+Runtime Statistics:
+
+. summarize time_seconds if status == "completed"
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+time_seconds |         12    322.4698    638.2861       .747   2253.447
+
+. 
+. * Clean up
+. capture erase "$results_file"
+
+. 
+. display _n "========================================================================"
+
+========================================================================
+
+. display "BENCHMARK COMPLETE"
+BENCHMARK COMPLETE
+
+. display "========================================================================"
+========================================================================
+
+. display "Date: $S_DATE $S_TIME"
+Date:  9 Feb 2026 10:26:28
+
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/benchmark_wolfers_stata.log
+  log type:  text
+ closed on:   9 Feb 2026, 10:26:28
+------------------------------------------------------------------------------------------------------------------------------------------

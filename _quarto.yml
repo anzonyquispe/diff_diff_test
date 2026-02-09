@@ -11,6 +11,7 @@ book:
     - data_generation.qmd
     - r_analysis.qmd
     - python_analysis.qmd
+    - did_multiplegt_dyn_comparison.qmd
     - comparison.qmd
 
 format:

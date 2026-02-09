@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>5&nbsp; Summary and Comparison – Difference-in-Differences with Staggered Treatment: Package Comparison</title>
+<title>6&nbsp; Summary and Comparison – Difference-in-Differences with Staggered Treatment: Package Comparison</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -64,7 +64,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./python_analysis.html" rel="prev">
+<link href="./did_multiplegt_dyn_comparison.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -114,7 +114,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./comparison.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Summary and Comparison</span></a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./comparison.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Summary and Comparison</span></a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -165,8 +165,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./did_multiplegt_dyn_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">did_multiplegt_dyn: Cross-Platform Comparison</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./comparison.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Summary and Comparison</span></span></a>
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Summary and Comparison</span></span></a>
   </div>
 </li>
     </ul>
@@ -179,23 +185,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#overall-comparison" id="toc-overall-comparison" class="nav-link active" data-scroll-target="#overall-comparison"><span class="header-section-number">6</span> Overall Comparison</a>
+  <li><a href="#overall-comparison" id="toc-overall-comparison" class="nav-link active" data-scroll-target="#overall-comparison"><span class="header-section-number">7</span> Overall Comparison</a>
   <ul class="collapse">
-  <li><a href="#package-availability-summary" id="toc-package-availability-summary" class="nav-link" data-scroll-target="#package-availability-summary"><span class="header-section-number">6.1</span> Package Availability Summary</a></li>
-  <li><a href="#execution-time-comparison" id="toc-execution-time-comparison" class="nav-link" data-scroll-target="#execution-time-comparison"><span class="header-section-number">6.2</span> Execution Time Comparison</a></li>
-  <li><a href="#estimation-accuracy" id="toc-estimation-accuracy" class="nav-link" data-scroll-target="#estimation-accuracy"><span class="header-section-number">6.3</span> Estimation Accuracy</a></li>
-  <li><a href="#key-findings" id="toc-key-findings" class="nav-link" data-scroll-target="#key-findings"><span class="header-section-number">6.4</span> Key Findings</a>
+  <li><a href="#package-availability-summary" id="toc-package-availability-summary" class="nav-link" data-scroll-target="#package-availability-summary"><span class="header-section-number">7.1</span> Package Availability Summary</a></li>
+  <li><a href="#execution-time-comparison" id="toc-execution-time-comparison" class="nav-link" data-scroll-target="#execution-time-comparison"><span class="header-section-number">7.2</span> Execution Time Comparison</a></li>
+  <li><a href="#estimation-accuracy" id="toc-estimation-accuracy" class="nav-link" data-scroll-target="#estimation-accuracy"><span class="header-section-number">7.3</span> Estimation Accuracy</a></li>
+  <li><a href="#key-findings" id="toc-key-findings" class="nav-link" data-scroll-target="#key-findings"><span class="header-section-number">7.4</span> Key Findings</a>
   <ul class="collapse">
-  <li><a href="#performance-rankings" id="toc-performance-rankings" class="nav-link" data-scroll-target="#performance-rankings"><span class="header-section-number">6.4.1</span> Performance Rankings</a></li>
-  <li><a href="#summary-table" id="toc-summary-table" class="nav-link" data-scroll-target="#summary-table"><span class="header-section-number">6.4.2</span> Summary Table</a></li>
+  <li><a href="#performance-rankings" id="toc-performance-rankings" class="nav-link" data-scroll-target="#performance-rankings"><span class="header-section-number">7.4.1</span> Performance Rankings</a></li>
+  <li><a href="#summary-table" id="toc-summary-table" class="nav-link" data-scroll-target="#summary-table"><span class="header-section-number">7.4.2</span> Summary Table</a></li>
   </ul></li>
-  <li><a href="#recommendations" id="toc-recommendations" class="nav-link" data-scroll-target="#recommendations"><span class="header-section-number">6.5</span> Recommendations</a>
+  <li><a href="#recommendations" id="toc-recommendations" class="nav-link" data-scroll-target="#recommendations"><span class="header-section-number">7.5</span> Recommendations</a>
   <ul class="collapse">
-  <li><a href="#for-r-users" id="toc-for-r-users" class="nav-link" data-scroll-target="#for-r-users"><span class="header-section-number">6.5.1</span> For R Users</a></li>
-  <li><a href="#for-python-users" id="toc-for-python-users" class="nav-link" data-scroll-target="#for-python-users"><span class="header-section-number">6.5.2</span> For Python Users</a></li>
-  <li><a href="#missing-in-python" id="toc-missing-in-python" class="nav-link" data-scroll-target="#missing-in-python"><span class="header-section-number">6.5.3</span> Missing in Python</a></li>
+  <li><a href="#for-r-users" id="toc-for-r-users" class="nav-link" data-scroll-target="#for-r-users"><span class="header-section-number">7.5.1</span> For R Users</a></li>
+  <li><a href="#for-python-users" id="toc-for-python-users" class="nav-link" data-scroll-target="#for-python-users"><span class="header-section-number">7.5.2</span> For Python Users</a></li>
+  <li><a href="#missing-in-python" id="toc-missing-in-python" class="nav-link" data-scroll-target="#missing-in-python"><span class="header-section-number">7.5.3</span> Missing in Python</a></li>
   </ul></li>
-  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">6.6</span> Conclusion</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">7.6</span> Conclusion</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -205,7 +211,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<div class="quarto-title-block"><div><h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Summary and Comparison</span></h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+<div class="quarto-title-block"><div><h1 class="title"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Summary and Comparison</span></h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
 </div>
 
 
@@ -222,8 +228,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="overall-comparison" class="level1" data-number="6">
-<h1 data-number="6"><span class="header-section-number">6</span> Overall Comparison</h1>
+<section id="overall-comparison" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Overall Comparison</h1>
 <p>This chapter provides a comprehensive comparison of all DiD estimators tested across R and Python.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
@@ -240,8 +246,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>panel <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"sim_data.rds"</span>)</span>
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>true_att <span class="ot">&lt;-</span> <span class="fu">mean</span>(panel<span class="sc">$</span>tau_gt[panel<span class="sc">$</span>treated])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<section id="package-availability-summary" class="level2" data-number="6.1">
-<h2 data-number="6.1" class="anchored" data-anchor-id="package-availability-summary"><span class="header-section-number">6.1</span> Package Availability Summary</h2>
+<section id="package-availability-summary" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="package-availability-summary"><span class="header-section-number">7.1</span> Package Availability Summary</h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>availability <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Method =</span> <span class="fu">c</span>(</span>
@@ -328,8 +334,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="execution-time-comparison" class="level2" data-number="6.2">
-<h2 data-number="6.2" class="anchored" data-anchor-id="execution-time-comparison"><span class="header-section-number">6.2</span> Execution Time Comparison</h2>
+<section id="execution-time-comparison" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="execution-time-comparison"><span class="header-section-number">7.2</span> Execution Time Comparison</h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine R results</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>r_timing <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
@@ -379,8 +385,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="estimation-accuracy" class="level2" data-number="6.3">
-<h2 data-number="6.3" class="anchored" data-anchor-id="estimation-accuracy"><span class="header-section-number">6.3</span> Estimation Accuracy</h2>
+<section id="estimation-accuracy" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="estimation-accuracy"><span class="header-section-number">7.3</span> Estimation Accuracy</h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract ATT estimates</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>r_att <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
@@ -515,10 +521,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="key-findings" class="level2" data-number="6.4">
-<h2 data-number="6.4" class="anchored" data-anchor-id="key-findings"><span class="header-section-number">6.4</span> Key Findings</h2>
-<section id="performance-rankings" class="level3" data-number="6.4.1">
-<h3 data-number="6.4.1" class="anchored" data-anchor-id="performance-rankings"><span class="header-section-number">6.4.1</span> Performance Rankings</h3>
+<section id="key-findings" class="level2" data-number="7.4">
+<h2 data-number="7.4" class="anchored" data-anchor-id="key-findings"><span class="header-section-number">7.4</span> Key Findings</h2>
+<section id="performance-rankings" class="level3" data-number="7.4.1">
+<h3 data-number="7.4.1" class="anchored" data-anchor-id="performance-rankings"><span class="header-section-number">7.4.1</span> Performance Rankings</h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># By speed (fastest)</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>speed_rank <span class="ot">&lt;-</span> all_timing <span class="sc">%&gt;%</span></span>
@@ -562,8 +568,8 @@ Most accurate packages (top 5, excluding TWFE):</code></pre>
 </div>
 </div>
 </section>
-<section id="summary-table" class="level3" data-number="6.4.2">
-<h3 data-number="6.4.2" class="anchored" data-anchor-id="summary-table"><span class="header-section-number">6.4.2</span> Summary Table</h3>
+<section id="summary-table" class="level3" data-number="7.4.2">
+<h3 data-number="7.4.2" class="anchored" data-anchor-id="summary-table"><span class="header-section-number">7.4.2</span> Summary Table</h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>summary_table <span class="ot">&lt;-</span> all_timing <span class="sc">%&gt;%</span></span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(all_att <span class="sc">%&gt;%</span> <span class="fu">select</span>(Package, Method, Language, ATT, Bias),</span>
@@ -657,11 +663,11 @@ Most accurate packages (top 5, excluding TWFE):</code></pre>
 </div>
 </section>
 </section>
-<section id="recommendations" class="level2" data-number="6.5">
-<h2 data-number="6.5" class="anchored" data-anchor-id="recommendations"><span class="header-section-number">6.5</span> Recommendations</h2>
+<section id="recommendations" class="level2" data-number="7.5">
+<h2 data-number="7.5" class="anchored" data-anchor-id="recommendations"><span class="header-section-number">7.5</span> Recommendations</h2>
 <p>Based on our benchmarks with 1 million observations:</p>
-<section id="for-r-users" class="level3" data-number="6.5.1">
-<h3 data-number="6.5.1" class="anchored" data-anchor-id="for-r-users"><span class="header-section-number">6.5.1</span> For R Users</h3>
+<section id="for-r-users" class="level3" data-number="7.5.1">
+<h3 data-number="7.5.1" class="anchored" data-anchor-id="for-r-users"><span class="header-section-number">7.5.1</span> For R Users</h3>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -694,8 +700,8 @@ Most accurate packages (top 5, excluding TWFE):</code></pre>
 </tbody>
 </table>
 </section>
-<section id="for-python-users" class="level3" data-number="6.5.2">
-<h3 data-number="6.5.2" class="anchored" data-anchor-id="for-python-users"><span class="header-section-number">6.5.2</span> For Python Users</h3>
+<section id="for-python-users" class="level3" data-number="7.5.2">
+<h3 data-number="7.5.2" class="anchored" data-anchor-id="for-python-users"><span class="header-section-number">7.5.2</span> For Python Users</h3>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -723,8 +729,8 @@ Most accurate packages (top 5, excluding TWFE):</code></pre>
 </tbody>
 </table>
 </section>
-<section id="missing-in-python" class="level3" data-number="6.5.3">
-<h3 data-number="6.5.3" class="anchored" data-anchor-id="missing-in-python"><span class="header-section-number">6.5.3</span> Missing in Python</h3>
+<section id="missing-in-python" class="level3" data-number="7.5.3">
+<h3 data-number="7.5.3" class="anchored" data-anchor-id="missing-in-python"><span class="header-section-number">7.5.3</span> Missing in Python</h3>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -741,8 +747,8 @@ Package Only Available in R/Stata
 </div>
 </section>
 </section>
-<section id="conclusion" class="level2" data-number="6.6">
-<h2 data-number="6.6" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">6.6</span> Conclusion</h2>
+<section id="conclusion" class="level2" data-number="7.6">
+<h2 data-number="7.6" class="anchored" data-anchor-id="conclusion"><span class="header-section-number">7.6</span> Conclusion</h2>
 <p>All heterogeneity-robust estimators (Callaway &amp; Sant’Anna, Sun &amp; Abraham, de Chaisemartin &amp; D’Haultfoeuille, Imputation) correctly recover the true treatment effect, while traditional TWFE shows bias due to heterogeneous effects.</p>
 <p>For large datasets (1M+ observations):</p>
 <ul>
@@ -1235,8 +1241,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./python_analysis.html" class="pagination-link" aria-label="Python Package Analysis">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Python Package Analysis</span></span>
+      <a href="./did_multiplegt_dyn_comparison.html" class="pagination-link" aria-label="did_multiplegt_dyn: Cross-Platform Comparison">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">did_multiplegt_dyn: Cross-Platform Comparison</span></span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

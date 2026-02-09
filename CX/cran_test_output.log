@@ -1,0 +1,141 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+================================================================================ 
+did_multiplegt_dyn R CRAN Package Tests
+Package version: 2.2.0 
+================================================================================ 
+
+
+================================================================================
+WAGEPAN DATASET
+================================================================================
+
+Data loaded: 4360 observations
+
+--- Wagepan : Baseline ---
+Runtime: 1.082 seconds
+
+--- Wagepan : Placebos ---
+Runtime: 1.7533 seconds
+
+--- Wagepan : Normalized ---
+Runtime: 1.8495 seconds
+
+--- Wagepan : Controls ---
+NOTE: 408 observations removed because of NA values (LHS: 408, RHS: 408).
+NOTE: 137 observations removed because of NA values (LHS: 137, RHS: 137).
+Runtime: 3.6193 seconds
+
+--- Wagepan : Trends_Nonparam ---
+Runtime: 1.636 seconds
+
+--- Wagepan : Trends_Lin ---
+Runtime: 4.1647 seconds
+
+--- Wagepan : Cluster ---
+Runtime: 1.9541 seconds
+
+--- Wagepan : Same_Switchers ---
+Runtime: 1.9989 seconds
+
+--- Wagepan : Switchers_In ---
+Runtime: 0.7953 seconds
+
+--- Wagepan : Switchers_Out ---
+Runtime: 0.7779 seconds
+
+
+================================================================================
+FAVARA-IMBS DATASET
+================================================================================
+
+Data loaded: 12538 observations
+
+--- Favara_Imbs : Baseline ---
+Runtime: 2.1236 seconds
+
+
+================================================================================
+DERYUGINA (2017)
+================================================================================
+
+Data loaded: 49698 observations
+
+--- Deryugina : Baseline ---
+Runtime: 44.8338 seconds
+
+
+================================================================================
+GENTZKOW (2011)
+================================================================================
+
+Data loaded: 16872 observations
+
+--- Gentzkow : Non_Normalized ---
+Runtime: 5.8646 seconds
+
+--- Gentzkow : Normalized ---
+Runtime: 6.2131 seconds
+
+
+================================================================================
+RUNTIME SUMMARY (R CRAN)
+================================================================================
+
+       Example           Model Runtime_sec Platform
+1      Wagepan        Baseline   1.0820410   R_CRAN
+2      Wagepan        Placebos   1.7532902   R_CRAN
+3      Wagepan      Normalized   1.8494632   R_CRAN
+4      Wagepan        Controls   3.6193430   R_CRAN
+5      Wagepan Trends_Nonparam   1.6360140   R_CRAN
+6      Wagepan      Trends_Lin   4.1646559   R_CRAN
+7      Wagepan         Cluster   1.9540861   R_CRAN
+8      Wagepan  Same_Switchers   1.9989450   R_CRAN
+9      Wagepan    Switchers_In   0.7953172   R_CRAN
+10     Wagepan   Switchers_Out   0.7778628   R_CRAN
+11 Favara_Imbs        Baseline   2.1235881   R_CRAN
+12   Deryugina        Baseline  44.8338411   R_CRAN
+13    Gentzkow  Non_Normalized   5.8646290   R_CRAN
+14    Gentzkow      Normalized   6.2131200   R_CRAN
+
+Total runtime: 78.67 seconds
+
+COEFFICIENTS SUMMARY
+   Example      Model Effect      Estimate         SE
+1  Wagepan   Baseline      1  4.095076e-02 0.03397091
+2  Wagepan   Baseline      2  2.188781e-02 0.03933878
+3  Wagepan   Baseline      3  3.110192e-02 0.04259758
+4  Wagepan   Baseline      4  1.816270e-02 0.04720997
+5  Wagepan   Baseline      5 -4.996577e-02 0.05462543
+6  Wagepan   Placebos      1  4.095076e-02 0.03397091
+7  Wagepan   Placebos      2  2.188781e-02 0.03933878
+8  Wagepan   Placebos      3  3.110192e-02 0.04259758
+9  Wagepan   Placebos      4  1.816270e-02 0.04720997
+10 Wagepan   Placebos      5 -4.996577e-02 0.05462543
+11 Wagepan Normalized      1  4.095076e-02 0.03397091
+12 Wagepan Normalized      2  1.407074e-02 0.02528922
+13 Wagepan Normalized      3  1.449144e-02 0.01984767
+14 Wagepan Normalized      4  6.759021e-03 0.01756860
+15 Wagepan Normalized      5 -1.527952e-02 0.01670444
+16 Wagepan   Controls      1  4.000482e-02 0.03274368
+17 Wagepan   Controls      2  1.094454e-02 0.04322520
+18 Wagepan   Controls      3 -8.078747e-05 0.05115949
+19 Wagepan   Controls      4 -4.685238e-03 0.05112074
+20 Wagepan   Controls      5 -7.045480e-02 0.05868578
+
+Results saved to:
+  - /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/runtime_R_cran.csv 
+  - /Users/anzony.quisperojas/Documents/GitHub/diff_diff_test/CX/coefficients_R_cran.csv 
+
+================================================================================
+COMPLETE
+================================================================================
