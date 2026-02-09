@@ -12,6 +12,7 @@ book:
     - r_analysis.qmd
     - python_analysis.qmd
     - did_multiplegt_dyn_comparison.qmd
+    - wolfers_benchmark.qmd
     - comparison.qmd
 
 format:

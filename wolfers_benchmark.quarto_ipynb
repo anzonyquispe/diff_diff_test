@@ -1,0 +1,320 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# Wolfers (2006) Replication Benchmark {#sec-wolfers}\n",
+        "\n",
+        "This chapter benchmarks DID estimators across **Stata**, **R**, and **Python** using the Wolfers (2006) divorce rate dataset from the DiD textbook.\n",
+        "\n",
+        "## Overview\n",
+        "\n",
+        "We replicate the analysis from the textbook `solution.do` file using four modern DID estimators:\n",
+        "\n",
+        "| Estimator | Reference | Stata | R | Python |\n",
+        "|-----------|-----------|:-----:|:-:|:------:|\n",
+        "| De Chaisemartin & D'Haultfoeuille | @dechaisemartin2024 | `did_multiplegt_dyn` | `DIDmultiplegtDYN` | `did-multiplegt-dyn` |\n",
+        "| Callaway & Sant'Anna | @callaway2021 | `csdid` | `did` | `csdid` |\n",
+        "| Borusyak, Jaravel & Spiess | @borusyak2024 | `did_imputation` | `didimputation` | **N/A** |\n",
+        "| Sun & Abraham | @sun2021 | `eventstudyinteract` | `fixest::sunab` | `pyfixest` |\n",
+        "\n",
+        "## Dataset\n",
+        "\n",
+        "**Wolfers (2006)**: Panel data on U.S. state divorce rates, 1956-1988.\n",
+        "\n",
+        "- **51 states** (including DC)\n",
+        "- **33 years** of data\n",
+        "- **1,683 observations**\n",
+        "- Treatment: Unilateral divorce law adoption (staggered timing)\n"
+      ],
+      "id": "bd036651"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| label: load-data\n",
+        "#| echo: true\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import matplotlib.pyplot as plt\n",
+        "import seaborn as sns\n",
+        "\n",
+        "# Load combined results from all platforms\n",
+        "results = pd.read_csv('CX/runtime_all_platforms.csv')\n",
+        "\n",
+        "print(f\"Total benchmark runs: {len(results)}\")\n",
+        "print(f\"\\nPlatforms: {', '.join(results['platform'].unique())}\")\n",
+        "print(f\"Estimators: {', '.join(results['package_std'].unique())}\")"
+      ],
+      "id": "load-data",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Benchmark Specifications\n",
+        "\n",
+        "All estimators use the same core specification:\n",
+        "\n",
+        "- **Outcome**: `div_rate` (divorce rate)\n",
+        "- **Group**: `state`\n",
+        "- **Time**: `year`\n",
+        "- **Treatment**: `udl` (unilateral divorce law indicator)\n",
+        "- **Effects**: 13 dynamic effects (post-treatment)\n",
+        "- **Placebos**: 13 pre-treatment periods\n",
+        "- **Weights**: `stpop` (state population)\n",
+        "\n",
+        "### Data Scaling\n",
+        "\n",
+        "We test three dataset sizes to evaluate scalability:\n",
+        "\n",
+        "| Scale | Observations | States | Description |\n",
+        "|-------|-------------|--------|-------------|\n",
+        "| Original | 1,683 | 51 | Original Wolfers data |\n",
+        "| 100x | 168,300 | 5,100 | Synthetic replication |\n",
+        "| 1000x | 1,683,000 | 51,000 | Large-scale test |\n",
+        "\n",
+        "## Results: Runtime Comparison\n"
+      ],
+      "id": "9205dc49"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 14,
+        "fig-height": 6
+      },
+      "source": [
+        "#| label: fig-runtime-comparison\n",
+        "#| fig-cap: Runtime comparison across platforms and dataset sizes\n",
+        "\n",
+        "fig, axes = plt.subplots(1, 3, figsize=(14, 5))\n",
+        "\n",
+        "scenarios = ['Original (1.7K)', '100x (168K)', '1000x (1.68M)']\n",
+        "completed = results[results['status'] == 'completed'].copy()\n",
+        "\n",
+        "for idx, scenario in enumerate(scenarios):\n",
+        "    ax = axes[idx]\n",
+        "    scenario_data = completed[completed['scenario'] == scenario]\n",
+        "\n",
+        "    if len(scenario_data) > 0:\n",
+        "        pivot = scenario_data.pivot_table(\n",
+        "            values='time_seconds',\n",
+        "            index='package_std',\n",
+        "            columns='platform',\n",
+        "            aggfunc='first'\n",
+        "        )\n",
+        "        # Reorder columns\n",
+        "        col_order = ['Stata', 'R', 'Python']\n",
+        "        pivot = pivot[[c for c in col_order if c in pivot.columns]]\n",
+        "        pivot.plot(kind='bar', ax=ax, width=0.8, color=['#1f77b4', '#2ca02c', '#ff7f0e'])\n",
+        "        ax.set_title(f'{scenario}', fontsize=12, fontweight='bold')\n",
+        "        ax.set_xlabel('')\n",
+        "        ax.set_ylabel('Runtime (seconds)' if idx == 0 else '')\n",
+        "        ax.legend(title='Platform' if idx == 2 else '', loc='upper left')\n",
+        "        ax.tick_params(axis='x', rotation=45)\n",
+        "\n",
+        "plt.suptitle('DID Estimator Runtime: Stata vs R vs Python', fontsize=14, fontweight='bold')\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "fig-runtime-comparison",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Runtime Tables\n",
+        "\n",
+        "### By Platform\n"
+      ],
+      "id": "5cd42591"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| label: tbl-runtime-platform\n",
+        "#| tbl-cap: Runtime (seconds) by platform and estimator\n",
+        "\n",
+        "for platform in ['Stata', 'R', 'Python']:\n",
+        "    platform_data = completed[completed['platform'] == platform]\n",
+        "    if len(platform_data) > 0:\n",
+        "        print(f\"\\n### {platform}\\n\")\n",
+        "        pivot = platform_data.pivot_table(\n",
+        "            values='time_seconds',\n",
+        "            index='package_std',\n",
+        "            columns='scenario',\n",
+        "            aggfunc='first'\n",
+        "        )\n",
+        "        col_order = ['Original (1.7K)', '100x (168K)', '1000x (1.68M)']\n",
+        "        pivot = pivot[[c for c in col_order if c in pivot.columns]]\n",
+        "        print(pivot.round(2).to_markdown())"
+      ],
+      "id": "tbl-runtime-platform",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### Cross-Platform Comparison by Estimator\n"
+      ],
+      "id": "e626bbd8"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| label: tbl-cross-platform\n",
+        "#| tbl-cap: Cross-platform runtime comparison for did_multiplegt_dyn\n",
+        "\n",
+        "print(\"\\n### did_multiplegt_dyn (De Chaisemartin & D'Haultfoeuille)\\n\")\n",
+        "dmdyn_data = completed[completed['package_std'] == 'did_multiplegt_dyn']\n",
+        "pivot = dmdyn_data.pivot_table(\n",
+        "    values='time_seconds',\n",
+        "    index='platform',\n",
+        "    columns='scenario',\n",
+        "    aggfunc='first'\n",
+        ")\n",
+        "col_order = ['Original (1.7K)', '100x (168K)', '1000x (1.68M)']\n",
+        "pivot = pivot[[c for c in col_order if c in pivot.columns]]\n",
+        "pivot = pivot.reindex(['Stata', 'R', 'Python'])\n",
+        "print(pivot.round(2).to_markdown())"
+      ],
+      "id": "tbl-cross-platform",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Key Findings\n",
+        "\n",
+        "### Scaling Performance at 1.68M Observations\n"
+      ],
+      "id": "6af4233d"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 10,
+        "fig-height": 5
+      },
+      "source": [
+        "#| label: fig-large-scale\n",
+        "#| fig-cap: Runtime at 1.68M observations\n",
+        "\n",
+        "large_data = completed[completed['scenario'] == '1000x (1.68M)'].copy()\n",
+        "\n",
+        "# Exclude R's did_imputation outlier for visualization\n",
+        "large_data_viz = large_data[~((large_data['platform'] == 'R') &\n",
+        "                               (large_data['package_std'] == 'did_imputation (BJS)'))]\n",
+        "\n",
+        "fig, ax = plt.subplots(figsize=(10, 5))\n",
+        "pivot = large_data_viz.pivot_table(\n",
+        "    values='time_seconds',\n",
+        "    index='package_std',\n",
+        "    columns='platform',\n",
+        "    aggfunc='first'\n",
+        ")\n",
+        "col_order = ['Stata', 'R', 'Python']\n",
+        "pivot = pivot[[c for c in col_order if c in pivot.columns]]\n",
+        "pivot.plot(kind='bar', ax=ax, width=0.8, color=['#1f77b4', '#2ca02c', '#ff7f0e'])\n",
+        "ax.set_xlabel('Estimator')\n",
+        "ax.set_ylabel('Runtime (seconds)')\n",
+        "ax.set_title('Runtime at 1.68M Observations\\n(excluding R didimputation outlier: 44,680s)')\n",
+        "ax.legend(title='Platform')\n",
+        "ax.tick_params(axis='x', rotation=45)\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "fig-large-scale",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### Performance Summary\n"
+      ],
+      "id": "efbddefb"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| label: summary-stats\n",
+        "#| echo: false\n",
+        "\n",
+        "# Best performers at 1.68M\n",
+        "large = completed[completed['scenario'] == '1000x (1.68M)']\n",
+        "print(\"**Fastest at 1.68M observations:**\\n\")\n",
+        "for est in large['package_std'].unique():\n",
+        "    est_data = large[large['package_std'] == est].sort_values('time_seconds')\n",
+        "    if len(est_data) > 0:\n",
+        "        fastest = est_data.iloc[0]\n",
+        "        print(f\"- **{est}**: {fastest['platform']} ({fastest['time_seconds']:.1f}s)\")"
+      ],
+      "id": "summary-stats",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Package Availability\n",
+        "\n",
+        "| Estimator | Stata | R | Python |\n",
+        "|-----------|:-----:|:-:|:------:|\n",
+        "| did_multiplegt_dyn | `did_multiplegt_dyn` | `DIDmultiplegtDYN` | `did-multiplegt-dyn` |\n",
+        "| Callaway-Sant'Anna | `csdid` (bootstrap) | `did` | `csdid` |\n",
+        "| Borusyak et al. | `did_imputation` | `didimputation` | **Not available** |\n",
+        "| Sun-Abraham | `eventstudyinteract` | `fixest::sunab` | `pyfixest` |\n",
+        "\n",
+        "### Notes\n",
+        "\n",
+        "1. **Stata's `csdid`** uses bootstrap inference by default, making it slower than analytical SE methods\n",
+        "2. **R's `didimputation`** has extremely poor scaling (44,680s at 1.68M rows) - likely a bug or memory issue\n",
+        "3. **Python lacks `did_imputation`** - no implementation of Borusyak et al. (2024) exists\n",
+        "4. **`did_multiplegt_dyn`** shows consistent performance across all three platforms\n",
+        "\n",
+        "## Reproducibility\n",
+        "\n",
+        "The benchmark scripts are available in the `CX/` directory:\n",
+        "\n",
+        "- `CX/benchmark_wolfers_python.ipynb` - Python benchmark\n",
+        "- `CX/benchmark_wolfers_complete.R` - R benchmark\n",
+        "- `CX/benchmark_wolfers_stata.do` - Stata benchmark\n",
+        "\n",
+        "All scripts use a 5-minute (300 second) timeout per estimator.\n",
+        "\n",
+        "## References\n",
+        "\n",
+        "::: {#refs}\n",
+        ":::"
+      ],
+      "id": "05a03ffe"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "test_did_had",
+      "language": "python",
+      "display_name": "Python (did-had test)",
+      "path": "/Users/anzony.quisperojas/Library/Jupyter/kernels/test_did_had"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

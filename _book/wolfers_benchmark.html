@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>6&nbsp; Wolfers (2006) Replication Benchmark – Difference-in-Differences with Staggered Treatment: Package Comparison</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./comparison.html" rel="next">
+<link href="./did_multiplegt_dyn_comparison.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-626149efe8f5d16e1d391ba177679bf0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./wolfers_benchmark.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Wolfers (2006) Replication Benchmark</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Difference-in-Differences with Staggered Treatment: Package Comparison</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introduction</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./data_generation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Synthetic Data Generation</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./r_analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">R Package Analysis</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./python_analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Python Package Analysis</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./did_multiplegt_dyn_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">did_multiplegt_dyn: Cross-Platform Comparison</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./wolfers_benchmark.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Wolfers (2006) Replication Benchmark</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Summary and Comparison</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview"><span class="header-section-number">6.1</span> Overview</a></li>
+  <li><a href="#dataset" id="toc-dataset" class="nav-link" data-scroll-target="#dataset"><span class="header-section-number">6.2</span> Dataset</a></li>
+  <li><a href="#benchmark-specifications" id="toc-benchmark-specifications" class="nav-link" data-scroll-target="#benchmark-specifications"><span class="header-section-number">6.3</span> Benchmark Specifications</a>
+  <ul class="collapse">
+  <li><a href="#data-scaling" id="toc-data-scaling" class="nav-link" data-scroll-target="#data-scaling"><span class="header-section-number">6.3.1</span> Data Scaling</a></li>
+  </ul></li>
+  <li><a href="#results-runtime-comparison" id="toc-results-runtime-comparison" class="nav-link" data-scroll-target="#results-runtime-comparison"><span class="header-section-number">6.4</span> Results: Runtime Comparison</a></li>
+  <li><a href="#runtime-tables-by-platform" id="toc-runtime-tables-by-platform" class="nav-link" data-scroll-target="#runtime-tables-by-platform"><span class="header-section-number">6.5</span> Runtime Tables by Platform</a>
+  <ul class="collapse">
+  <li><a href="#stata" id="toc-stata" class="nav-link" data-scroll-target="#stata"><span class="header-section-number">6.5.1</span> Stata</a></li>
+  <li><a href="#r" id="toc-r" class="nav-link" data-scroll-target="#r"><span class="header-section-number">6.5.2</span> R</a></li>
+  <li><a href="#python" id="toc-python" class="nav-link" data-scroll-target="#python"><span class="header-section-number">6.5.3</span> Python</a></li>
+  </ul></li>
+  <li><a href="#cross-platform-comparison-did_multiplegt_dyn" id="toc-cross-platform-comparison-did_multiplegt_dyn" class="nav-link" data-scroll-target="#cross-platform-comparison-did_multiplegt_dyn"><span class="header-section-number">6.6</span> Cross-Platform Comparison: did_multiplegt_dyn</a></li>
+  <li><a href="#key-findings" id="toc-key-findings" class="nav-link" data-scroll-target="#key-findings"><span class="header-section-number">6.7</span> Key Findings</a>
+  <ul class="collapse">
+  <li><a href="#fastest-at-1.68m-observations" id="toc-fastest-at-1.68m-observations" class="nav-link" data-scroll-target="#fastest-at-1.68m-observations"><span class="header-section-number">6.7.1</span> Fastest at 1.68M Observations</a></li>
+  <li><a href="#performance-notes" id="toc-performance-notes" class="nav-link" data-scroll-target="#performance-notes"><span class="header-section-number">6.7.2</span> Performance Notes</a></li>
+  </ul></li>
+  <li><a href="#package-availability-summary" id="toc-package-availability-summary" class="nav-link" data-scroll-target="#package-availability-summary"><span class="header-section-number">6.8</span> Package Availability Summary</a></li>
+  <li><a href="#reproducibility" id="toc-reproducibility" class="nav-link" data-scroll-target="#reproducibility"><span class="header-section-number">6.9</span> Reproducibility</a>
+  <ul class="collapse">
+  <li><a href="#data-files" id="toc-data-files" class="nav-link" data-scroll-target="#data-files"><span class="header-section-number">6.9.1</span> Data Files</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title"><span id="sec-wolfers" class="quarto-section-identifier"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Wolfers (2006) Replication Benchmark</span></span></h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This chapter benchmarks DID estimators across <strong>Stata</strong>, <strong>R</strong>, and <strong>Python</strong> using the Wolfers (2006) divorce rate dataset.</p>
+<section id="overview" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="overview"><span class="header-section-number">6.1</span> Overview</h2>
+<p>We replicate the analysis from the textbook <code>solution.do</code> file using four modern DID estimators:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 27%">
+<col style="width: 17%">
+<col style="width: 7%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Estimator</th>
+<th>Reference</th>
+<th style="text-align: center;">Stata</th>
+<th style="text-align: center;">R</th>
+<th style="text-align: center;">Python</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>De Chaisemartin &amp; D’Haultfoeuille (2024)</td>
+<td><code>did_multiplegt_dyn</code></td>
+<td style="text-align: center;"><code>DIDmultiplegtDYN</code></td>
+<td style="text-align: center;"><code>did-multiplegt-dyn</code></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td>Callaway &amp; Sant’Anna (2021)</td>
+<td><code>csdid</code></td>
+<td style="text-align: center;"><code>did</code></td>
+<td style="text-align: center;"><code>csdid</code></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td>Borusyak, Jaravel &amp; Spiess (2024)</td>
+<td><code>did_imputation</code></td>
+<td style="text-align: center;"><code>didimputation</code></td>
+<td style="text-align: center;"><strong>N/A</strong></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td>Sun &amp; Abraham (2021)</td>
+<td><code>eventstudyinteract</code></td>
+<td style="text-align: center;"><code>fixest::sunab</code></td>
+<td style="text-align: center;"><code>pyfixest</code></td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="dataset" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="dataset"><span class="header-section-number">6.2</span> Dataset</h2>
+<p><strong>Wolfers (2006)</strong>: Panel data on U.S. state divorce rates, 1956-1988.</p>
+<ul>
+<li><strong>51 states</strong> (including DC)</li>
+<li><strong>33 years</strong> of data</li>
+<li><strong>1,683 observations</strong></li>
+<li>Treatment: Unilateral divorce law adoption (staggered timing)</li>
+</ul>
+</section>
+<section id="benchmark-specifications" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="benchmark-specifications"><span class="header-section-number">6.3</span> Benchmark Specifications</h2>
+<p>All estimators use the same core specification:</p>
+<ul>
+<li><strong>Outcome</strong>: <code>div_rate</code> (divorce rate)</li>
+<li><strong>Group</strong>: <code>state</code></li>
+<li><strong>Time</strong>: <code>year</code></li>
+<li><strong>Treatment</strong>: <code>udl</code> (unilateral divorce law indicator)</li>
+<li><strong>Effects</strong>: 13 dynamic effects (post-treatment)</li>
+<li><strong>Placebos</strong>: 13 pre-treatment periods</li>
+<li><strong>Weights</strong>: <code>stpop</code> (state population)</li>
+</ul>
+<section id="data-scaling" class="level3" data-number="6.3.1">
+<h3 data-number="6.3.1" class="anchored" data-anchor-id="data-scaling"><span class="header-section-number">6.3.1</span> Data Scaling</h3>
+<p>We test three dataset sizes to evaluate scalability:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Scale</th>
+<th>Observations</th>
+<th>States</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Original</td>
+<td>1,683</td>
+<td>51</td>
+<td>Original Wolfers data</td>
+</tr>
+<tr class="even">
+<td>100x</td>
+<td>168,300</td>
+<td>5,100</td>
+<td>Synthetic replication</td>
+</tr>
+<tr class="odd">
+<td>1000x</td>
+<td>1,683,000</td>
+<td>51,000</td>
+<td>Large-scale test</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="results-runtime-comparison" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="results-runtime-comparison"><span class="header-section-number">6.4</span> Results: Runtime Comparison</h2>
+<div id="fig-runtime" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-runtime-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="CX/runtime_comparison_all_platforms.png" class="img-fluid figure-img" style="width:100.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-runtime-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6.1: Runtime comparison across platforms
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="runtime-tables-by-platform" class="level2" data-number="6.5">
+<h2 data-number="6.5" class="anchored" data-anchor-id="runtime-tables-by-platform"><span class="header-section-number">6.5</span> Runtime Tables by Platform</h2>
+<section id="stata" class="level3" data-number="6.5.1">
+<h3 data-number="6.5.1" class="anchored" data-anchor-id="stata"><span class="header-section-number">6.5.1</span> Stata</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Estimator</th>
+<th style="text-align: right;">Original (1.7K)</th>
+<th style="text-align: right;">100x (168K)</th>
+<th style="text-align: right;">1000x (1.68M)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>did_multiplegt_dyn</td>
+<td style="text-align: right;">2.81s</td>
+<td style="text-align: right;">47.42s</td>
+<td style="text-align: right;">543.28s</td>
+</tr>
+<tr class="even">
+<td>csdid (bootstrap)</td>
+<td style="text-align: right;">4.89s</td>
+<td style="text-align: right;">184.53s</td>
+<td style="text-align: right;">2,253.45s</td>
+</tr>
+<tr class="odd">
+<td>did_imputation</td>
+<td style="text-align: right;">0.75s</td>
+<td style="text-align: right;">30.69s</td>
+<td style="text-align: right;">241.73s</td>
+</tr>
+<tr class="even">
+<td>Sun-Abraham</td>
+<td style="text-align: right;">0.75s</td>
+<td style="text-align: right;">51.62s</td>
+<td style="text-align: right;">507.74s</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="r" class="level3" data-number="6.5.2">
+<h3 data-number="6.5.2" class="anchored" data-anchor-id="r"><span class="header-section-number">6.5.2</span> R</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Estimator</th>
+<th style="text-align: right;">Original (1.7K)</th>
+<th style="text-align: right;">100x (168K)</th>
+<th style="text-align: right;">1000x (1.68M)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>DIDmultiplegtDYN</td>
+<td style="text-align: right;">3.83s</td>
+<td style="text-align: right;">9.71s</td>
+<td style="text-align: right;">42.84s</td>
+</tr>
+<tr class="even">
+<td>did (CS)</td>
+<td style="text-align: right;">0.91s</td>
+<td style="text-align: right;">1.61s</td>
+<td style="text-align: right;">9.04s</td>
+</tr>
+<tr class="odd">
+<td>didimputation</td>
+<td style="text-align: right;">0.06s</td>
+<td style="text-align: right;">13.03s</td>
+<td style="text-align: right;">44,680.21s*</td>
+</tr>
+<tr class="even">
+<td>fixest::sunab</td>
+<td style="text-align: right;">0.13s</td>
+<td style="text-align: right;">7.80s</td>
+<td style="text-align: right;">81.25s</td>
+</tr>
+</tbody>
+</table>
+<p>*Note: R’s didimputation has extremely poor scaling at 1.68M rows</p>
+</section>
+<section id="python" class="level3" data-number="6.5.3">
+<h3 data-number="6.5.3" class="anchored" data-anchor-id="python"><span class="header-section-number">6.5.3</span> Python</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Estimator</th>
+<th style="text-align: right;">Original (1.7K)</th>
+<th style="text-align: right;">100x (168K)</th>
+<th style="text-align: right;">1000x (1.68M)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>did-multiplegt-dyn</td>
+<td style="text-align: right;">3.37s</td>
+<td style="text-align: right;">6.39s</td>
+<td style="text-align: right;">36.72s</td>
+</tr>
+<tr class="even">
+<td>csdid</td>
+<td style="text-align: right;">1.01s</td>
+<td style="text-align: right;">3.16s</td>
+<td style="text-align: right;">40.56s</td>
+</tr>
+<tr class="odd">
+<td>pyfixest (SA)</td>
+<td style="text-align: right;">4.58s</td>
+<td style="text-align: right;">4.30s</td>
+<td style="text-align: right;">52.46s</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="cross-platform-comparison-did_multiplegt_dyn" class="level2" data-number="6.6">
+<h2 data-number="6.6" class="anchored" data-anchor-id="cross-platform-comparison-did_multiplegt_dyn"><span class="header-section-number">6.6</span> Cross-Platform Comparison: did_multiplegt_dyn</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Platform</th>
+<th style="text-align: right;">Original (1.7K)</th>
+<th style="text-align: right;">100x (168K)</th>
+<th style="text-align: right;">1000x (1.68M)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Stata</td>
+<td style="text-align: right;">2.81s</td>
+<td style="text-align: right;">47.42s</td>
+<td style="text-align: right;">543.28s</td>
+</tr>
+<tr class="even">
+<td>R</td>
+<td style="text-align: right;">3.83s</td>
+<td style="text-align: right;">9.71s</td>
+<td style="text-align: right;">42.84s</td>
+</tr>
+<tr class="odd">
+<td>Python</td>
+<td style="text-align: right;">3.37s</td>
+<td style="text-align: right;">6.39s</td>
+<td style="text-align: right;">36.72s</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key finding</strong>: Python’s Polars-based implementation scales best, followed by R’s CRAN version. Stata is significantly slower at scale.</p>
+</section>
+<section id="key-findings" class="level2" data-number="6.7">
+<h2 data-number="6.7" class="anchored" data-anchor-id="key-findings"><span class="header-section-number">6.7</span> Key Findings</h2>
+<section id="fastest-at-1.68m-observations" class="level3" data-number="6.7.1">
+<h3 data-number="6.7.1" class="anchored" data-anchor-id="fastest-at-1.68m-observations"><span class="header-section-number">6.7.1</span> Fastest at 1.68M Observations</h3>
+<ul>
+<li><strong>did_multiplegt_dyn</strong>: Python (36.7s) &gt; R (42.8s) &gt; Stata (543.3s)</li>
+<li><strong>Callaway-Sant’Anna</strong>: R (9.0s) &gt; Python (40.6s) &gt; Stata (2,253.4s)</li>
+<li><strong>Sun-Abraham</strong>: Python (52.5s) &gt; R (81.3s) &gt; Stata (507.7s)</li>
+<li><strong>did_imputation</strong>: Stata (241.7s) &gt; R (44,680.2s) - Python N/A</li>
+</ul>
+</section>
+<section id="performance-notes" class="level3" data-number="6.7.2">
+<h3 data-number="6.7.2" class="anchored" data-anchor-id="performance-notes"><span class="header-section-number">6.7.2</span> Performance Notes</h3>
+<ol type="1">
+<li><p><strong>Stata’s <code>csdid</code></strong> uses bootstrap inference by default, making it significantly slower than analytical SE methods in R/Python</p></li>
+<li><p><strong>R’s <code>didimputation</code></strong> has extremely poor scaling (44,680s at 1.68M rows) - likely a memory or algorithmic issue</p></li>
+<li><p><strong>Python lacks <code>did_imputation</code></strong> - no implementation of Borusyak et al.&nbsp;(2024) exists</p></li>
+<li><p><strong><code>did_multiplegt_dyn</code></strong> shows the most consistent cross-platform performance, with Python’s Polars implementation being fastest</p></li>
+</ol>
+</section>
+</section>
+<section id="package-availability-summary" class="level2" data-number="6.8">
+<h2 data-number="6.8" class="anchored" data-anchor-id="package-availability-summary"><span class="header-section-number">6.8</span> Package Availability Summary</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 37%">
+<col style="width: 24%">
+<col style="width: 10%">
+<col style="width: 27%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Estimator</th>
+<th style="text-align: center;">Stata</th>
+<th style="text-align: center;">R</th>
+<th style="text-align: center;">Python</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>De Chaisemartin &amp; D’Haultfoeuille</td>
+<td style="text-align: center;"><code>did_multiplegt_dyn</code></td>
+<td style="text-align: center;"><code>DIDmultiplegtDYN</code></td>
+<td style="text-align: center;"><code>did-multiplegt-dyn</code></td>
+</tr>
+<tr class="even">
+<td>Callaway-Sant’Anna</td>
+<td style="text-align: center;"><code>csdid</code> (bootstrap)</td>
+<td style="text-align: center;"><code>did</code></td>
+<td style="text-align: center;"><code>csdid</code></td>
+</tr>
+<tr class="odd">
+<td>Borusyak et al.</td>
+<td style="text-align: center;"><code>did_imputation</code></td>
+<td style="text-align: center;"><code>didimputation</code></td>
+<td style="text-align: center;"><strong>Not available</strong></td>
+</tr>
+<tr class="even">
+<td>Sun-Abraham</td>
+<td style="text-align: center;"><code>eventstudyinteract</code></td>
+<td style="text-align: center;"><code>fixest::sunab</code></td>
+<td style="text-align: center;"><code>pyfixest</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="reproducibility" class="level2" data-number="6.9">
+<h2 data-number="6.9" class="anchored" data-anchor-id="reproducibility"><span class="header-section-number">6.9</span> Reproducibility</h2>
+<p>The benchmark scripts are available in the <code>CX/</code> directory:</p>
+<ul>
+<li><strong>Python</strong>: <code>CX/benchmark_wolfers_python.ipynb</code></li>
+<li><strong>R</strong>: <code>CX/benchmark_wolfers_complete.R</code></li>
+<li><strong>Stata</strong>: <code>CX/benchmark_wolfers_stata.do</code></li>
+</ul>
+<p>All scripts use a 5-minute (300 second) timeout per estimator.</p>
+<section id="data-files" class="level3" data-number="6.9.1">
+<h3 data-number="6.9.1" class="anchored" data-anchor-id="data-files"><span class="header-section-number">6.9.1</span> Data Files</h3>
+<ul>
+<li><code>CX/runtime_Python.csv</code> - Python benchmark results</li>
+<li><code>CX/runtime_R.csv</code> - R benchmark results</li>
+<li><code>CX/benchmark_results_stata.csv</code> - Stata benchmark results</li>
+<li><code>CX/runtime_all_platforms.csv</code> - Combined cross-platform results</li>
+</ul>
+
+
+<!-- -->
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+  const viewSource = window.document.getElementById('quarto-view-source') ||
+                     window.document.getElementById('quarto-code-tools-source');
+  if (viewSource) {
+    const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+    viewSource.addEventListener("click", function(e) {
+      if (sourceUrl) {
+        // rstudio viewer pane
+        if (/\bcapabilities=\b/.test(window.location)) {
+          window.open(sourceUrl);
+        } else {
+          window.location.href = sourceUrl;
+        }
+      } else {
+        const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+        modal.show();
+      }
+      return false;
+    });
+  }
+  function toggleCodeHandler(show) {
+    return function(e) {
+      const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+      for (let i=0; i<detailsSrc.length; i++) {
+        const details = detailsSrc[i].parentElement;
+        if (show) {
+          details.open = true;
+        } else {
+          details.removeAttribute("open");
+        }
+      }
+      const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+      const fromCls = show ? "hidden" : "unhidden";
+      const toCls = show ? "unhidden" : "hidden";
+      for (let i=0; i<cellCodeDivs.length; i++) {
+        const codeDiv = cellCodeDivs[i];
+        if (codeDiv.classList.contains(fromCls)) {
+          codeDiv.classList.remove(fromCls);
+          codeDiv.classList.add(toCls);
+        } 
+      }
+      return false;
+    }
+  }
+  const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+  if (hideAllCode) {
+    hideAllCode.addEventListener("click", toggleCodeHandler(false));
+  }
+  const showAllCode = window.document.getElementById("quarto-show-all-code");
+  if (showAllCode) {
+    showAllCode.addEventListener("click", toggleCodeHandler(true));
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./did_multiplegt_dyn_comparison.html" class="pagination-link" aria-label="did_multiplegt_dyn: Cross-Platform Comparison">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">did_multiplegt_dyn: Cross-Platform Comparison</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./comparison.html" class="pagination-link" aria-label="Summary and Comparison">
+        <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Summary and Comparison</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="sourceCode" id="cb1" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># Wolfers (2006) Replication Benchmark {#sec-wolfers}</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>This chapter benchmarks DID estimators across **Stata**, **R**, and **Python** using the Wolfers (2006) divorce rate dataset.</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">## Overview</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>We replicate the analysis from the textbook <span class="in">`solution.do`</span> file using four modern DID estimators:</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>| Estimator | Reference | Stata | R | Python |</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>|-----------|-----------|:-----:|:-:|:------:|</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>| De Chaisemartin &amp; D'Haultfoeuille (2024) | <span class="in">`did_multiplegt_dyn`</span> | <span class="in">`DIDmultiplegtDYN`</span> | <span class="in">`did-multiplegt-dyn`</span> |</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>| Callaway &amp; Sant'Anna (2021) | <span class="in">`csdid`</span> | <span class="in">`did`</span> | <span class="in">`csdid`</span> |</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>| Borusyak, Jaravel &amp; Spiess (2024) | <span class="in">`did_imputation`</span> | <span class="in">`didimputation`</span> | **N/A** |</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>| Sun &amp; Abraham (2021) | <span class="in">`eventstudyinteract`</span> | <span class="in">`fixest::sunab`</span> | <span class="in">`pyfixest`</span> |</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">## Dataset</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>**Wolfers (2006)**: Panel data on U.S. state divorce rates, 1956-1988.</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**51 states** (including DC)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**33 years** of data</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**1,683 observations**</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Treatment: Unilateral divorce law adoption (staggered timing)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="fu">## Benchmark Specifications</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>All estimators use the same core specification:</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Outcome**: <span class="in">`div_rate`</span> (divorce rate)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Group**: <span class="in">`state`</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Time**: <span class="in">`year`</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Treatment**: <span class="in">`udl`</span> (unilateral divorce law indicator)</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Effects**: 13 dynamic effects (post-treatment)</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Placebos**: 13 pre-treatment periods</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Weights**: <span class="in">`stpop`</span> (state population)</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="fu">### Data Scaling</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>We test three dataset sizes to evaluate scalability:</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>| Scale | Observations | States | Description |</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>|-------|-------------|--------|-------------|</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>| Original | 1,683 | 51 | Original Wolfers data |</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>| 100x | 168,300 | 5,100 | Synthetic replication |</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>| 1000x | 1,683,000 | 51,000 | Large-scale test |</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="fu">## Results: Runtime Comparison</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a><span class="al">![Runtime comparison across platforms](CX/runtime_comparison_all_platforms.png)</span>{#fig-runtime width="100%"}</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a><span class="fu">## Runtime Tables by Platform</span></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a><span class="fu">### Stata</span></span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>| Estimator | Original (1.7K) | 100x (168K) | 1000x (1.68M) |</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>|-----------|----------------:|------------:|--------------:|</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>| did_multiplegt_dyn | 2.81s | 47.42s | 543.28s |</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>| csdid (bootstrap) | 4.89s | 184.53s | 2,253.45s |</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>| did_imputation | 0.75s | 30.69s | 241.73s |</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>| Sun-Abraham | 0.75s | 51.62s | 507.74s |</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a><span class="fu">### R</span></span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>| Estimator | Original (1.7K) | 100x (168K) | 1000x (1.68M) |</span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>|-----------|----------------:|------------:|--------------:|</span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>| DIDmultiplegtDYN | 3.83s | 9.71s | 42.84s |</span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>| did (CS) | 0.91s | 1.61s | 9.04s |</span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>| didimputation | 0.06s | 13.03s | 44,680.21s* |</span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>| fixest::sunab | 0.13s | 7.80s | 81.25s |</span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>*Note: R's didimputation has extremely poor scaling at 1.68M rows</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a><span class="fu">### Python</span></span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>| Estimator | Original (1.7K) | 100x (168K) | 1000x (1.68M) |</span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>|-----------|----------------:|------------:|--------------:|</span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a>| did-multiplegt-dyn | 3.37s | 6.39s | 36.72s |</span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>| csdid | 1.01s | 3.16s | 40.56s |</span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>| pyfixest (SA) | 4.58s | 4.30s | 52.46s |</span>
+<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a><span class="fu">## Cross-Platform Comparison: did_multiplegt_dyn</span></span>
+<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a>| Platform | Original (1.7K) | 100x (168K) | 1000x (1.68M) |</span>
+<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a>|----------|----------------:|------------:|--------------:|</span>
+<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a>| Stata | 2.81s | 47.42s | 543.28s |</span>
+<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a>| R | 3.83s | 9.71s | 42.84s |</span>
+<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a>| Python | 3.37s | 6.39s | 36.72s |</span>
+<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a>**Key finding**: Python's Polars-based implementation scales best, followed by R's CRAN version. Stata is significantly slower at scale.</span>
+<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a><span class="fu">## Key Findings</span></span>
+<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a><span class="fu">### Fastest at 1.68M Observations</span></span>
+<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**did_multiplegt_dyn**: Python (36.7s) &gt; R (42.8s) &gt; Stata (543.3s)</span>
+<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Callaway-Sant'Anna**: R (9.0s) &gt; Python (40.6s) &gt; Stata (2,253.4s)</span>
+<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Sun-Abraham**: Python (52.5s) &gt; R (81.3s) &gt; Stata (507.7s)</span>
+<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**did_imputation**: Stata (241.7s) &gt; R (44,680.2s) - Python N/A</span>
+<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a><span class="fu">### Performance Notes</span></span>
+<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**Stata's `csdid`** uses bootstrap inference by default, making it significantly slower than analytical SE methods in R/Python</span>
+<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**R's `didimputation`** has extremely poor scaling (44,680s at 1.68M rows) - likely a memory or algorithmic issue</span>
+<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**Python lacks `did_imputation`** - no implementation of Borusyak et al. (2024) exists</span>
+<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**`did_multiplegt_dyn`** shows the most consistent cross-platform performance, with Python's Polars implementation being fastest</span>
+<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a><span class="fu">## Package Availability Summary</span></span>
+<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-112"><a href="#cb1-112" aria-hidden="true" tabindex="-1"></a>| Estimator | Stata | R | Python |</span>
+<span id="cb1-113"><a href="#cb1-113" aria-hidden="true" tabindex="-1"></a>|-----------|:-----:|:-:|:------:|</span>
+<span id="cb1-114"><a href="#cb1-114" aria-hidden="true" tabindex="-1"></a>| De Chaisemartin &amp; D'Haultfoeuille | <span class="in">`did_multiplegt_dyn`</span> | <span class="in">`DIDmultiplegtDYN`</span> | <span class="in">`did-multiplegt-dyn`</span> |</span>
+<span id="cb1-115"><a href="#cb1-115" aria-hidden="true" tabindex="-1"></a>| Callaway-Sant'Anna | <span class="in">`csdid`</span> (bootstrap) | <span class="in">`did`</span> | <span class="in">`csdid`</span> |</span>
+<span id="cb1-116"><a href="#cb1-116" aria-hidden="true" tabindex="-1"></a>| Borusyak et al. | <span class="in">`did_imputation`</span> | <span class="in">`didimputation`</span> | **Not available** |</span>
+<span id="cb1-117"><a href="#cb1-117" aria-hidden="true" tabindex="-1"></a>| Sun-Abraham | <span class="in">`eventstudyinteract`</span> | <span class="in">`fixest::sunab`</span> | <span class="in">`pyfixest`</span> |</span>
+<span id="cb1-118"><a href="#cb1-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-119"><a href="#cb1-119" aria-hidden="true" tabindex="-1"></a><span class="fu">## Reproducibility</span></span>
+<span id="cb1-120"><a href="#cb1-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-121"><a href="#cb1-121" aria-hidden="true" tabindex="-1"></a>The benchmark scripts are available in the <span class="in">`CX/`</span> directory:</span>
+<span id="cb1-122"><a href="#cb1-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-123"><a href="#cb1-123" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Python**: <span class="in">`CX/benchmark_wolfers_python.ipynb`</span></span>
+<span id="cb1-124"><a href="#cb1-124" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**R**: <span class="in">`CX/benchmark_wolfers_complete.R`</span></span>
+<span id="cb1-125"><a href="#cb1-125" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Stata**: <span class="in">`CX/benchmark_wolfers_stata.do`</span></span>
+<span id="cb1-126"><a href="#cb1-126" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-127"><a href="#cb1-127" aria-hidden="true" tabindex="-1"></a>All scripts use a 5-minute (300 second) timeout per estimator.</span>
+<span id="cb1-128"><a href="#cb1-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-129"><a href="#cb1-129" aria-hidden="true" tabindex="-1"></a><span class="fu">### Data Files</span></span>
+<span id="cb1-130"><a href="#cb1-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-131"><a href="#cb1-131" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`CX/runtime_Python.csv`</span> - Python benchmark results</span>
+<span id="cb1-132"><a href="#cb1-132" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`CX/runtime_R.csv`</span> - R benchmark results</span>
+<span id="cb1-133"><a href="#cb1-133" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`CX/benchmark_results_stata.csv`</span> - Stata benchmark results</span>
+<span id="cb1-134"><a href="#cb1-134" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`CX/runtime_all_platforms.csv`</span> - Combined cross-platform results</span></code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></pre></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
