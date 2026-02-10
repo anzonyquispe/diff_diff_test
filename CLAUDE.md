@@ -165,6 +165,18 @@ This repository contains comparative analysis and benchmarking of difference-in-
 
 **Key finding**: Python's Polars-based `did_multiplegt_dyn` scales best.
 
+#### Benchmark Hardware Specifications:
+
+| Specification | Value |
+|--------------|-------|
+| **Computer** | MacBook Pro |
+| **Chip** | Apple M4 Max |
+| **Total Cores** | 14 (10 performance + 4 efficiency) |
+| **Memory (RAM)** | 36 GB |
+| **Model Identifier** | Mac16,6 |
+
+**Summary**: Benchmarks were run on a MacBook Pro with Apple M4 Max processor (14 cores: 10 performance + 4 efficiency) and 36 GB RAM.
+
 ---
 
 ## Notes
