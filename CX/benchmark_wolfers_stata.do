@@ -495,7 +495,6 @@ display _n "====================================================================
 display "SCENARIO 3: Synthetic Data 1000x"
 display "========================================================================"
 
-use `wolfers_base', clear
 create_synthetic_data, multiplier(10)
 
 local n_rows = _N
@@ -535,11 +534,15 @@ else {
 * 2. did_imputation - 1000x
 * -------------------------------------------------------------------------
 display _n "2. Running did_imputation on 1000x data..."
+local n_rows = _N
+display "Synthetic data rows: `n_rows'"
+
+local scenario "1000x (1.68M)"
 
 timer clear 1
 timer on 1
 
-capture noisily did_imputation div_rate state year first_treat_imp [aw=stop],  horizons(0/12) autosample minn(0) pre(13)
+capture noisily did_imputation div_rate state year first_treat_imp [aw=stpop],  horizons(0/12) autosample minn(0) pre(13)
 
 local rc = _rc
 timer off 1
@@ -628,7 +631,7 @@ display "=======================================================================
 
 use "$results_file", clear
 drop if missing(scenario)
-
+drop if status == "error"
 list scenario package rows time_seconds status coefficient, noobs clean
 
 * Create pivot table manually
@@ -636,8 +639,14 @@ display _n _n "PIVOT TABLE (Time in seconds):"
 display "========================================================================"
 
 preserve
-reshape wide time_seconds, i(package) j(scenario) string
-list package time_seconds*, noobs clean
+	* Encode the string variable into numeric
+	encode scenario, gen(scenario_num)
+
+	* Drop the original string variable
+	drop scenario coefficient std_error
+	* Now reshape using the numeric version
+	reshape wide time_seconds rows, i(package) j(scenario_num)
+	list package time_seconds*, noobs clean
 restore
 
 * Save results to CSV
